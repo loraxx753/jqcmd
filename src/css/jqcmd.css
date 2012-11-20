@@ -1,0 +1,78 @@
+.jqcmd {
+	background: #000;
+	color: #FFF;
+	font-family: "Lucida Console";
+}
+
+.jqcmd #pointer {
+	display: inline-block;
+	background: #FFF;
+	height: 1em;
+	width: 10px;
+	vertical-align: middle;
+}
+
+.jqcmd .output ul li, .output ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	margin-top: 3px;
+}
+
+.jqcmd .padleft { 
+	padding-left: 10px;
+	width: 100px;
+	display: inline-block;
+}
+
+
+/* Blinker animation */
+
+.jqcmd #pointer {
+    -webkit-animation-direction: normal;
+    -webkit-animation-duration: 1s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-name: blink;
+    -webkit-animation-timing-function: ease;   
+}
+
+@-webkit-keyframes 'blink' {
+    0% { background: #FFF; }
+    50% { background: #000; }
+}
+.jqcmd #pointer {
+	display: inline-block;
+	background: #FFF;
+	height: 1em;
+	width: 10px;
+	vertical-align: middle;
+}
+
+.jqcmd .output ul li, .output ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	margin-top: 3px;
+}
+
+.jqcmd .padleft { 
+	padding-left: 10px;
+	width: 100px;
+	display: inline-block;
+}
+
+
+/* Blinker animation */
+
+.jqcmd #pointer {
+    -webkit-animation-direction: normal;
+    -webkit-animation-duration: 1s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-name: blink;
+    -webkit-animation-timing-function: ease;   
+}
+
+@-webkit-keyframes 'blink' {
+    0% { background: #FFF; }
+    50% { background: #000; }
+}
