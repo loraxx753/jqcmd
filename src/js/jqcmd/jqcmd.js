@@ -10,7 +10,8 @@
 
     // Create some defaults, extending them with any options that were provided
     var settings = $.extend( {
-    	"fileSystem" : {}
+    	"fileSystem" : {},
+    	"hostname" : "",
     }, custom);
 
 	var run = function(call) {
@@ -219,7 +220,7 @@
     return this.each(function() {
     	$this = $(this);
     	$this.addClass("jqcmd");
-    	$this.append('<p id="first"><span class="static">kevinbaugh.com</span> > <span class="input"></span><span id="pointer"></span></p>')    
+    	$this.append('<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p>')    
 		line = $this.children('#first').clone();
 		$this.keydown(function(e) {
 			if(e.which == 46)
@@ -311,7 +312,7 @@
 					}
 				}
 			}
-			$this.animate({ scrollTop: $this.height() }, "fast");
+			$this.animate({ scrollTop: $this[0].scrollHeight }, "fast");
 		});
     });
   };

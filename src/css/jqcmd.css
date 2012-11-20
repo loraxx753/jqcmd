@@ -2,6 +2,13 @@
 	background: #000;
 	color: #FFF;
 	font-family: "Lucida Console";
+	overflow: auto;
+	min-height: 300px;
+	min-width: 500px;
+}
+
+.jqcmd:focus {
+	outline: none;
 }
 
 .jqcmd #pointer {
