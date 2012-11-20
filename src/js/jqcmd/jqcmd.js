@@ -201,7 +201,7 @@
 				}
 				else
 				{
-					directory = new Array("root");
+					directory = new Array();
 				}
 			},
 			help : "Changes the current directory the user is in"
