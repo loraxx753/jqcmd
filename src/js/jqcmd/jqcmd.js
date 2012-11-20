@@ -12,12 +12,13 @@
     var settings = $.extend( {
     	"fileSystem" : {},
     	"hostname" : "",
+    	"style" : "black",
     }, custom);
 
 	var run = function(call) {
 		call = $.trim(call);
 		history.push(call);
-		if(call.match(/\.[a-z]+$/))
+		if(call.match(/^[^\s-]\.[a-z]+$/))
 		{
 			var current = getCurrentDirectory();
 			if(current._files[call].hasOwnProperty("location"))
@@ -204,6 +205,18 @@
 				}
 			},
 			help : "Changes the current directory the user is in"
+		},
+		touch : {
+			execute : function(options) {
+				current = getCurrentDirectory();
+				current._files[options] = {}
+			}
+		},
+		rm : {
+			execute : function(options) {
+				current = getCurrentDirectory();
+				delete current._files[options]
+			} 
 		}
 	}
 
@@ -219,7 +232,7 @@
 
     return this.each(function() {
     	$this = $(this);
-    	$this.addClass("jqcmd");
+    	$this.addClass("jqcmd").addClass(settings.style);
     	$this.append('<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p>')    
 		line = $this.children('#first').clone();
 		$this.keydown(function(e) {
