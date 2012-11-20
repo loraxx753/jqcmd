@@ -50,5 +50,8 @@ var filesystem = {
 				}
 			}
 		}
+	},
+	_files : {
+		".ignore" : {}
 	}
 }

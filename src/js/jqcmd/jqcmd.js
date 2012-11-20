@@ -1,336 +1,415 @@
 (function( $ ){
+	/**
+	 * Command line prompt plugin. Emulates simple linux style command line prompt
+	 */
+	$.fn.jqcmd = function( custom ) {
+		// Keeps track of where the user is in the file tree  
+		var directory = new Array();
+		// Array to keep the history of the user
+		var history = new Array();
+		// Where the pointer is for the history
+		var pointer = -1;
+		// the default line to clone for new lines
+		var line;
+		// globalizing the element that's been called
+		var element = this;
 
-  $.fn.jqcmd = function( custom ) {  
+		// Customizable things.
+		var settings = $.extend( {
+			// The file system json object to act as the file tree
+			"fileSystem" : {},
+			// What the host name should say before the > tick
+			"hostname" : "",
+			// What style to use. Black or white are the only one's available (for now)
+			"style" : "black",
+		}, custom);
 
-	var directory = new Array();
-	var history = new Array();
-	var pointer = -1;
-	var line;
-	var element = this;
-
-    // Create some defaults, extending them with any options that were provided
-    var settings = $.extend( {
-    	"fileSystem" : {},
-    	"hostname" : "",
-    	"style" : "black",
-    }, custom);
-
-	var run = function(call) {
-		call = $.trim(call);
-		history.push(call);
-		if(call.match(/^[^\s-]\.[a-z]+$/))
-		{
-			var current = getCurrentDirectory();
-			if(current._files[call].hasOwnProperty("location"))
+		/**
+		 * Runs the command line task that was typed in
+		 * @param  {string} call The string of the command
+		 * @return {text}        Result text to be sent to the user.
+		 */
+		var run = function(call) {
+			call = $.trim(call);
+			history.push(call);
+			if(call.match(/^[^\s-]\.[a-z]+$/))
 			{
-				  window.open(current._files[call].location, '_blank');
-				  window.focus();
+				var current = getCurrentDirectory();
+				if(current._files[call].hasOwnProperty("location"))
+				{
+					  window.open(current._files[call].location, '_blank');
+					  window.focus();
+				}
+				else
+				{
+					return current._files[call].execute();
+				}
 			}
 			else
 			{
-				return current._files[call].execute();
+				params = getParts(call);
+				command = params.command;
+				try
+				{
+					return functions[command].execute(params);
+				}
+				catch(err)
+				{
+					console.log(err);
+					parts = call.split(" ");
+					return "That function does not exist. For help and a list of functions, type \"help\"";
+				}
+
 			}
 		}
-		else
+		/**
+		 * Parses the command string to get the command and parameters
+		 * @param  {string} str the input string
+		 * @return {object}     An object of parameters
+		 */
+		var getParts = function(str)
 		{
-			try
+			params = {};
+			parts = str.split(" ");
+			
+			var found = str.match(/\-([a-z]+)/gi);
+			params.shortform = new Array();
+			for(i in found)
 			{
-				parts = call.split(" ");
-				return functions[parts.shift()].execute(parts);
+				found[i] = found[i].slice(1);
+				var split = found[i].split("");
+				params.shortform = params.shortform.concat(split);
 			}
-			catch(err)
+
+			str = str.replace(/[\s]*\-[a-z]+[\s]*/gi, "");
+
+			sections = str.split(" ");
+
+			params.command = sections.shift();
+
+			if(sections.length > 0)
 			{
-				console.log(err);
-				parts = call.split(" ");
-				return "That function does not exist. For help and a list of functions, type \"help\"";
+				params.target = sections.pop();
 			}
 
-		}
-	}
-	var complete = function(input) {
-		var splitup = $(input).text().split(' ');
-		if(splitup.length == 0)
-		{
-			splitup = new Array($(input).text());
-		}
-		var directories = splitup.pop();
-		var directoryTest = directories.split("/");
-		if(directoryTest.length == 0)
-		{
-			var search = directories;
-		}
-		else
-		{
-			directories = directories.split("/");
-			var search = directories.pop();
-		}
-		var current = getCurrentDirectory();
+			return params;
 
-		for(i in directories)
-		{
-			current = current[directories[i]];
 		}
-		var items = new Array();
-		var found = new Array();
+		/**
+		 * Tab autocomplete functinolity
+		 * @param  {selector} Selector to fild
+		 * @return {void}     
+		 */
+		var complete = function(input) {
+			var splitup = $(input).text().split(' ');
+			if(splitup.length == 0)
+			{
+				splitup = new Array($(input).text());
+			}
+			var directories = splitup.pop();
+			var directoryTest = directories.split("/");
+			if(directoryTest.length == 0)
+			{
+				var search = directories;
+			}
+			else
+			{
+				directories = directories.split("/");
+				var search = directories.pop();
+			}
+			var current = getCurrentDirectory();
 
-		for(i in current)
-		{
-			items.push(i);
-		}
-		if(current._files)
-		{
-			for(i in current._files)
+			for(i in directories)
+			{
+				current = current[directories[i]];
+			}
+			var items = new Array();
+			var found = new Array();
+
+			for(i in current)
 			{
 				items.push(i);
 			}
-		}
-		for(i in items)
-		{
-			var patt = new RegExp("^"+search, "i");
-			if(items[i].match(patt))
+			if(current._files)
 			{
-				found.push(items[i]);
-			}
-		}
-
-		if(found.length == 1)
-		{
-			if(directories.length > 0)
-			{
-				var returnText = splitup.join(" ")+" "+directories.join("/")+"/"+found[0];
-			}
-			else
-			{
-				var returnText = splitup.join(" ")+" "+found[0];
-			}
-
-			if(current[found[0]])
-			{
-				returnText += "/";
-			}
-
-			$(input).text(returnText);
-
-		}
-	}
-	var functions = {
-		clear : {
-			execute : function (options) {
-				element.empty().html(line.clone());
-				return "clearConsole";
-			},
-			help : "clears the screen of all text"
-		},
-
-		ls : {
-			execute : function(options) {
-				var output = "<ul>";
-				var current = getCurrentDirectory();
-				if(current.location != null) 
+				for(i in current._files)
 				{
-					for(i in current)
-					{
-						if(i != "_files")
-						{
-							output += "<li>"+current[i]+"</li>";
-						}
-					}
+					items.push(i);
+				}
+			}
+			for(i in items)
+			{
+				var patt = new RegExp("^"+search, "i");
+				if(items[i].match(patt))
+				{
+					found.push(items[i]);
+				}
+			}
+
+			if(found.length == 1)
+			{
+				if(directories.length > 0)
+				{
+					var returnText = splitup.join(" ")+" "+directories.join("/")+"/"+found[0];
 				}
 				else
 				{
-					for(i in current)
-					{
-						if(i != "_files")
-						{
-							output += "<li>"+i+"/</li>";
-						}
-					}
-					if(current._files)
-					{
-						for(i in current._files)
-						{
-							output += "<li>"+i+"</li>";
-						}
-					}
+					var returnText = splitup.join(" ")+" "+found[0];
 				}
-				output += "</ul>";
-				return output;
-			},
-			help : "lists all files and folders for your current directory"
-		},
-		help : {
-			execute : function() {
-				returnString = "Here's a list of commands to use for this site: <ul>";
-				for(i in functions)
+
+				if(current[found[0]])
 				{
-					returnString += "<li><span class='padleft'>"+i+ "</span> : "+functions[i].help+"</li>";
+					returnText += "/";
 				}
-				returnString += "</ul>";
-				return returnString;
+
+				$(input).text(returnText);
+			}
+		}
+		/**
+		 * List of functions that can be used by the system
+		 * @type {Object}
+		 */
+		var functions = {
+			clear : {
+				execute : function (options) {
+					element.empty().html(line.clone());
+					return "clearConsole";
+				},
+				help : "clears the screen of all text"
 			},
-			help : "displays help for the system"
-		},
-		cd : {
-			execute : function(options) {
-				if(options[0] != "/")
-				{
-					if(options[0].charAt( options[0].length-1 ) == "/")
-					{
-						options[0] = options[0].slice(0, -1);
-					}
-					var dirs = options[0].split("/");
-					var childDir = options[0];
+
+			ls : {
+				execute : function(params) {
+					var output = "<ul>";
 					var current = getCurrentDirectory();
-					for(i in dirs)
+					if(current.location != null) 
 					{
-						if(current[dirs[i]])
+						for(i in current)
 						{
-							directory.push(dirs[i]);
-							current = current[dirs[i]];
+							if(i != "_files")
+							{
+								output += "<li>"+current[i]+"</li>";
+							}
 						}
-						else if(dirs[i] == "..")
-						{
-							directory.pop();
-							current = getCurrentDirectory();
-						}
-						else
-						{
-							return "Oh no! Something went wonky!";
-						}
-					}
-				}
-				else
-				{
-					directory = new Array();
-				}
-			},
-			help : "Changes the current directory the user is in"
-		},
-		touch : {
-			execute : function(options) {
-				current = getCurrentDirectory();
-				if(!current._files)
-				{
-					current._files = {};
-				}
-				current._files[options] = {};
-			}
-		},
-		rm : {
-			execute : function(options) {
-				current = getCurrentDirectory();
-				delete current._files[options]
-			} 
-		}
-	}
-
-	var getCurrentDirectory = function()
-	{
-		var current = settings.fileSystem;
-		for(i in directory)
-		{
-			current = current[directory[i]];
-		}
-		return current;
-	}
-
-    return this.each(function() {
-    	$this = $(this);
-    	$this.addClass("jqcmd").addClass(settings.style);
-    	$this.append('<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p>')    
-		line = $this.children('#first').clone();
-		$this.keydown(function(e) {
-			if(e.which == 46)
-			{
-				var string = $("#pointer").prev().text().slice(0, -1);
-				$("#pointer").prev().text(string);
-			}
-			else if(e.which == 9) //tab
-			{
-				e.preventDefault();
-				complete($("#pointer").prev());
-			}
-			else if(e.which == 8) //backspace
-			{
-				e.preventDefault();
-				var string = $("#pointer").prev().text().slice(0, -1);
-				$("#pointer").prev().text(string);
-			}
-			else if(e.which == 38 ) //up arrow
-			{
-				e.preventDefault();
-				if(pointer < 0)
-				{
-					pointer = history.length-1;
-				}
-				else if(pointer > 0)
-				{
-					pointer--;
-				}
-				if(pointer >= 0)
-				{
-					$("#pointer").prev().text(history[pointer]);
-				}
-			}
-			else if(e.which == 40) //down arrow
-			{
-				e.preventDefault();
-				if(pointer > history.length-1)
-				{
-					pointer = history.length-1;
-				}
-				else if(pointer != history.length-1)
-				{
-					pointer++;
-				}
-				if(pointer <= history.length-1)
-				{
-					$("#pointer").prev().text(history[pointer]);
-				}
-			}
-		});
-		$this.keypress(function(e) {
-	        var keycode = null;
-	        if(window.event) {
-	            keycode = window.event.keyCode;
-	        }else if(e) {
-	            keycode = e.which;
-	        }
-			if(keycode != 13 && e.ctrlKey == false)
-			{
-		        var key = String.fromCharCode(keycode);
-				$("#pointer").prev().append(key);
-			}
-			else
-			{
-				var output = run($("#pointer").prev().text());
-				newLine = line.clone();
-				if(output != "clearConsole")
-				{
-					var staticText = $(newLine).children(".static").text();
-					for(i in directory)
-					{
-						if(directory[i] != "root")
-						{
-							staticText += "/"+directory[i];
-						}
-						$(newLine).children(".static").text(staticText);
-					}				
-					if(output != undefined)
-					{
-						$('#pointer').parent().after("<div class='output'>"+output+"</div>");
-						$('#pointer').remove();
-						$('.output:last-child').after(newLine);					
 					}
 					else
 					{
-						$('#pointer').parent().after(newLine);
-						$('#pointer').remove();
+						for(i in current)
+						{
+							if(i != "_files")
+							{
+								output += "<li>"+i+"/</li>";
+							}
+						}
+						if(current._files)
+						{
+							for(i in current._files)
+							{
+								if(i.substring(0,1) != "." || $.inArray("a", params.shortform) >= 0)
+								{
+									output += "<li>"+i+"</li>";
+								}
+							}
+						}
+					}
+					output += "</ul>";
+					return output;
+				},
+				help : "lists all files and folders for your current directory"
+			},
+			help : {
+				execute : function() {
+					returnString = "Here's a list of commands to use for this site: <ul>";
+					for(i in functions)
+					{
+						returnString += "<li><span class='padleft'>"+i+ "</span> : "+functions[i].help+"</li>";
+					}
+					returnString += "</ul>";
+					return returnString;
+				},
+				help : "displays help for the system"
+			},
+			cd : {
+				execute : function(params) {
+					if(params.target != "/")
+					{
+						if(params.target.charAt( params.target.length-1 ) == "/")
+						{
+							params.target = params.target.slice(0, -1);
+						}
+						var dirs = params.target.split("/");
+						var childDir = params.target;
+						var current = getCurrentDirectory();
+						for(i in dirs)
+						{
+							if(current[dirs[i]])
+							{
+								directory.push(dirs[i]);
+								current = current[dirs[i]];
+							}
+							else if(dirs[i] == "..")
+							{
+								directory.pop();
+								current = getCurrentDirectory();
+							}
+							else
+							{
+								return "Oh no! Something went wonky!";
+							}
+						}
+					}
+					else
+					{
+						directory = new Array();
+					}
+				},
+				help : "Changes the current directory the user is in"
+			},
+			touch : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					if(!current._files)
+					{
+						current._files = {};
+					}
+					current._files[params.target] = {};
+				},
+				help : "Creates a file, or if the file exists, updates the files timestamp",
+			},
+			rm : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					delete current._files[params.target]
+				},
+				help : "Removes a file from the file tree",
+			}
+		}
+
+		/**
+		 * Gets the current directory in the file tree and returns that part of the object
+		 * @return {object} 
+		 */
+		var getCurrentDirectory = function()
+		{
+			var current = settings.fileSystem;
+			for(i in directory)
+			{
+				current = current[directory[i]];
+			}
+			return current;
+		}
+
+		// This is where the real meat of everything is....
+		return this.each(function() {
+			$this = $(this);
+			// Add the jqcmd class and the style class
+			$this.addClass("jqcmd").addClass(settings.style);
+			// Append the first line to the div
+			$this.append('<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p>')    
+			
+			// Clone the first line to use for later
+			line = $this.children('#first').clone();
+
+
+			$this.keydown(function(e) {
+				if(e.which == 46) //delete key
+				{
+					var string = $("#pointer").prev().text().slice(0, -1);
+					$("#pointer").prev().text(string);
+				}
+				else if(e.which == 9) //tab
+				{
+					e.preventDefault();
+					complete($("#pointer").prev());
+				}
+				else if(e.which == 8) //backspace
+				{
+					e.preventDefault();
+					var string = $("#pointer").prev().text().slice(0, -1);
+					$("#pointer").prev().text(string);
+				}
+				else if(e.which == 38 ) //up arrow
+				{
+					e.preventDefault();
+					if(pointer < 0)
+					{
+						pointer = history.length-1;
+					}
+					else if(pointer > 0)
+					{
+						pointer--;
+					}
+					if(pointer >= 0)
+					{
+						$("#pointer").prev().text(history[pointer]);
 					}
 				}
-			}
-			$this.animate({ scrollTop: $this[0].scrollHeight }, "fast");
+				else if(e.which == 40) //down arrow
+				{
+					e.preventDefault();
+					if(pointer > history.length-1)
+					{
+						pointer = history.length-1;
+					}
+					else if(pointer != history.length-1)
+					{
+						pointer++;
+					}
+					if(pointer <= history.length-1)
+					{
+						$("#pointer").prev().text(history[pointer]);
+					}
+				}
+			});
+			$this.keypress(function(e) {
+				var keycode = null;
+				if(window.event) {
+					keycode = window.event.keyCode;
+				}else if(e) {
+					keycode = e.which;
+				}
+				// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+				if(keycode != 13 && e.ctrlKey == false)
+				{
+					var key = String.fromCharCode(keycode);
+					$("#pointer").prev().append(key);
+				}
+				else
+				{
+					// Run the function and get the input
+					var output = run($("#pointer").prev().text());
+					//clone a new line
+					newLine = line.clone();
+					// if the output doesn't clear the console
+					if(output != "clearConsole")
+					{
+						// Append the current filetree location to the hostname
+						var staticText = $(newLine).children(".static").text();
+						for(i in directory)
+						{
+							if(directory[i] != "root")
+							{
+								staticText += "/"+directory[i];
+							}
+							$(newLine).children(".static").text(staticText);
+						}
+						// If there is output then print it to the screen.	
+						if(output != undefined)
+						{
+							$('#pointer').parent().after("<div class='output'>"+output+"</div>");
+							$('#pointer').remove();
+							$('.output:last-child').after(newLine);					
+						}
+						else
+						{
+							$('#pointer').parent().after(newLine);
+							$('#pointer').remove();
+						}
+					}
+				}
+				// Keep the scrollbar at the bottom of the screen.
+				$this.animate({ scrollTop: $this[0].scrollHeight }, "fast");
+			});
 		});
-    });
-  };
+	};
 })( jQuery );
