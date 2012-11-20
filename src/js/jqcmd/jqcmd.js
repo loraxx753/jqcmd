@@ -32,7 +32,7 @@
 		var run = function(call) {
 			call = $.trim(call);
 			history.push(call);
-			if(call.match(/^[^\s-]\.[a-z]+$/))
+			if(call.match(/^[\S]*\.[a-z]+$/))
 			{
 				var current = getCurrentDirectory();
 				if(current._files[call].hasOwnProperty("location"))
