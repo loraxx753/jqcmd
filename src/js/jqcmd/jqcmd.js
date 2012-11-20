@@ -209,7 +209,11 @@
 		touch : {
 			execute : function(options) {
 				current = getCurrentDirectory();
-				current._files[options] = {}
+				if(!current._files)
+				{
+					current._files = {};
+				}
+				current._files[options] = {};
 			}
 		},
 		rm : {
