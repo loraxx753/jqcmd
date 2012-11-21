@@ -5,8 +5,19 @@
 	$.fn.jqcmd = function( custom ) {
 		// Keeps track of where the user is in the file tree  
 		var directory = new Array();
-		// Array to keep the history of the user
-		var history = new Array();
+		if(typeof(Storage)!=="undefined")
+		{
+			if(!localStorage.history)
+			{
+				localStorage.history = "[]";
+			}
+			var history = $.parseJSON(localStorage.history);
+		}
+		else
+		{
+			// Array to keep the history of the user
+			var history = new Array();			
+		}
 		// Where the pointer is for the history
 		var pointer = -1;
 		// the default line to clone for new lines
@@ -32,6 +43,11 @@
 		var run = function(call) {
 			call = $.trim(call);
 			history.push(call);
+			if(typeof(Storage)!=="undefined")
+			{
+				localStorage.history = JSON.stringify(history);
+			}
+
 			if(call.match(/^[\S]*\.[a-z]+$/))
 			{
 				var current = getCurrentDirectory();
@@ -339,6 +355,7 @@
 					{
 						pointer--;
 					}
+					console.log(pointer);
 					if(pointer >= 0)
 					{
 						$("#pointer").prev().text(history[pointer]);
@@ -376,6 +393,7 @@
 				}
 				else
 				{
+					pointer = -1;
 					// Run the function and get the input
 					var output = run($("#pointer").prev().text());
 					//clone a new line
