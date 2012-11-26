@@ -384,21 +384,69 @@
 			});
 
 			$this.keydown(function(e) {
+				$pointer = $("#pointer");
+				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
 				if(e.which == 46) //delete key
 				{
-					var string = $("#pointer").prev().text().slice(0, -1);
-					$("#pointer").prev().text(string);
+					if(inTheMiddle)
+					{
+						var input = $pointer.prev().children(".after").text();
+						var slicedString = input.slice(1);
+						var firstLetter = input.slice(0, 1);
+						$pointer.prev().children(".selected").text(firstLetter);
+						$pointer.prev().children(".after").text(slicedString);
+					}
 				}
 				else if(e.which == 9) //tab
 				{
 					e.preventDefault();
-					complete($("#pointer").prev());
+					complete($pointer.prev());
 				}
 				else if(e.which == 8) //backspace
 				{
 					e.preventDefault();
-					var string = $("#pointer").prev().text().slice(0, -1);
-					$("#pointer").prev().text(string);
+					if(inTheMiddle)
+					{
+						var string = $pointer.prev().children(".before").text().slice(0, -1);
+						$pointer.prev().children(".before").text(string);
+					}
+					else
+					{
+						var string = $pointer.prev().text().slice(0, -1);
+						$pointer.prev().text(string);						
+					}
+				}
+				else if(e.which == 37) //left arrow
+				{
+					if(inTheMiddle)
+					{
+						var input = $pointer.prev().children(".before").text();
+						var slicedString = input.slice(0, -1);
+						var lastLetter = input.slice(-1);
+						$pointer.prev().children(".after").text($pointer.prev().children(".selected").text()+$pointer.prev().children(".after").text());
+						$pointer.prev().children(".selected").text(lastLetter);
+						$pointer.prev().children(".before").text(slicedString);
+					}
+					else
+					{
+						var input = $pointer.prev().text();
+						var slicedString = input.slice(0, -1);
+						var lastLetter = input.slice(-1);
+						$pointer.hide();
+						$pointer.prev().html("<span class='before'>"+slicedString+"</span><span class='selected'>"+lastLetter+"</span><span class='after'></span>");
+					}
+				}
+				else if(e.which == 39) //right arrow
+				{
+					if(inTheMiddle)
+					{
+						var input = $pointer.prev().children(".after").text();
+						var slicedString = input.slice(1);
+						var firstLetter = input.slice(0, 1);
+						$pointer.prev().children(".before").text($pointer.prev().children(".before").text()+$pointer.prev().children(".selected").text());
+						$pointer.prev().children(".selected").text(firstLetter);
+						$pointer.prev().children(".after").text(slicedString);
+					}
 				}
 				else if(e.which == 38 ) //up arrow
 				{
@@ -434,6 +482,8 @@
 				}
 			});
 			$this.keypress(function(e) {
+				$pointer = $("#pointer");
+				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
 				var keycode = null;
 				if(window.event) {
 					keycode = window.event.keyCode;
@@ -444,7 +494,14 @@
 				if(keycode != 13 && e.ctrlKey == false)
 				{
 					var key = String.fromCharCode(keycode);
-					$("#pointer").prev().append(key);
+					if(inTheMiddle)
+					{
+						$pointer.prev().children(".before").append(key);
+					}
+					else
+					{
+						$pointer.prev().append(key);						
+					}
 				}
 				else
 				{

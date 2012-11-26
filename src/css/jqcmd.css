@@ -55,7 +55,7 @@
 	outline: none;
 }
 
-.jqcmd #pointer {
+.jqcmd #pointer, .jqcmd .selected {
 	display: inline-block;
 	background: #FFF;
 	height: 1em;
@@ -79,7 +79,7 @@
 
 /* Blinker animation */
 
-.jqcmd #pointer {
+.jqcmd #pointer, .jqcmd .selected {
     -webkit-animation-direction: normal;
     -webkit-animation-duration: 1s;
     -webkit-animation-iteration-count: infinite;
@@ -91,12 +91,15 @@
     0% { background: #FFF; }
     50% { background: #000; }
 }
-.jqcmd #pointer {
+.jqcmd #pointer, .jqcmd .selected {
 	display: inline-block;
 	background: #FFF;
 	height: 1em;
 	width: 10px;
 	vertical-align: middle;
+}
+.jqcmd .before, .jqcmd .after {
+	display: inline-block;
 }
 
 .jqcmd .output ul li, .output ul {
@@ -114,16 +117,3 @@
 
 
 /* Blinker animation */
-
-.jqcmd #pointer {
-    -webkit-animation-direction: normal;
-    -webkit-animation-duration: 1s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-name: blink;
-    -webkit-animation-timing-function: ease;   
-}
-
-@-webkit-keyframes 'blink' {
-    0% { background: #FFF; }
-    50% { background: #000; }
-}
