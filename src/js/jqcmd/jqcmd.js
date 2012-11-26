@@ -33,6 +33,7 @@
 			"hostname" : "",
 			// What style to use. Black or white are the only one's available (for now)
 			"style" : "black",
+			"loadScreen" : "",
 		}, custom);
 
 		/**
@@ -65,16 +66,16 @@
 			{
 				params = getParts(call);
 				command = params.command;
-				try
-				{
+				// try
+				// {
 					return functions[command].execute(params);
-				}
-				catch(err)
-				{
-					console.log(err);
-					parts = call.split(" ");
-					return "That function does not exist. For help and a list of functions, type \"help\"";
-				}
+				// }
+				// catch(err)
+				// {
+				// 	console.log(err);
+				// 	parts = call.split(" ");
+				// 	return "That function does not exist. For help and a list of functions, type \"help\"";
+				// }
 
 			}
 		}
@@ -188,7 +189,7 @@
 		var functions = {
 			clear : {
 				execute : function (options) {
-					element.empty().html(line.clone());
+					$(".jqcmd_window").empty().html(line.clone());
 					return "clearConsole";
 				},
 				help : "clears the screen of all text"
@@ -281,6 +282,13 @@
 				},
 				help : "Changes the current directory the user is in"
 			},
+			mkdir : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					current[params.target] = {};
+				},
+				help : "Makes a directory in the file tree"
+			},
 			touch : {
 				execute : function(params) {
 					current = getCurrentDirectory();
@@ -315,17 +323,65 @@
 			return current;
 		}
 
+		var objectToString = function(o){
+		    
+		    var parse = function(_o){
+		    
+		        var a = [], t;
+		        
+		        for(var p in _o){
+		        
+		            if(_o.hasOwnProperty(p)){
+		            
+		                t = _o[p];
+		                
+		                if(t && typeof t == "object"){
+		                
+		                    a[a.length]= p + ":{" + arguments.callee(t).join(", ") + "}";
+		                    
+		                }
+		                else {
+		                    
+		                    if(typeof t == "string"){
+		                    
+		                        a[a.length] = [ p+ ":\"" + t.toString() + "\"" ];
+		                    }
+		                    else{
+		                        a[a.length] = [ p+ ":" + t.toString()];
+		                    }
+		                    
+		                }
+		            }
+		        }
+		        
+		        return a;
+		        
+		    }
+		    
+		    return "{" + parse(o).join(", ") + "}";
+		    
+		}    
+
 		// This is where the real meat of everything is....
 		return this.each(function() {
 			$this = $(this);
 			// Add the jqcmd class and the style class
 			$this.addClass("jqcmd").addClass(settings.style);
+			$this.css("position", "relative");
 			// Append the first line to the div
-			$this.append('<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p>')    
-			
+			$this.prepend('<div class="jqcmd_menu"><ul><li><a href=#">Export</a></li></ul></div>');
+			$this.append('<div class="jqcmd_window">'+settings.loadScreen+'<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"></span><span id="pointer"></span></p></div>');
+			var position = $this.offset();
 			// Clone the first line to use for later
-			line = $this.children('#first').clone();
-
+			line = $this.find('#first').clone();
+			$this.children('.jqcmd_menu').click(function(e) {
+				e.preventDefault();
+				var preparedString = objectToString(settings.fileSystem);
+				preparedString = preparedString.replace(/</g, "&lt;");
+				var other = window.open("", '_blank');
+				window.focus();
+				other.document.write(preparedString);
+			});
 
 			$this.keydown(function(e) {
 				if(e.which == 46) //delete key
@@ -355,7 +411,6 @@
 					{
 						pointer--;
 					}
-					console.log(pointer);
 					if(pointer >= 0)
 					{
 						$("#pointer").prev().text(history[pointer]);

@@ -17,10 +17,24 @@
 <script src="../src/js/jqcmd/jqcmd.js"></script>
 <script>
 $(document).ready(function() {
+	loadText = "<p>Welcome to the jqcmd example file.</p>";
+	if(!localStorage.lastLogin)
+	{
+		loadText += "<p>You've never logged in before!</p>";		
+	}
+	else
+	{
+		loadText += "</p><p>Last login "+localStorage.lastLogin+".</p>";
+	}
 	$("body").jqcmd({
-		hostname : "example",
+		loadScreen : loadText,
+		hostname : "jqcmd.example",
     	fileSystem : filesystem,
 	});
+	var d=new Date();
+	var n=d.toLocaleDateString();
+	n += " "+d.toLocaleTimeString();
+	localStorage.lastLogin = n;
 });
 </script>
 </head>

@@ -3,8 +3,44 @@
 	overflow: auto;
 	min-height: 300px;
 	min-width: 500px;
+	position: relative;
+	margin: 0;
 }
-
+.jqcmd_menu {
+	font-family: Arial,Helvetica,sans-serif;
+	opacity: 0.3;
+	background: rgba(255,255,255,0.8);
+	position: absolute;
+	z-index: 100;
+	padding: 5px 5px 10px 10px;
+	right: 0;
+	top: 10px;
+	border: 2px solid rgba(100, 100, 100, 0.3);
+	border-top: 0;
+	border-right: 0;
+	-webkit-border-bottom-left-radius: 5px;
+	-moz-border-radius-bottomleft: 5px;
+	border-bottom-left-radius: 5px;
+	-webkit-border-bottom-top-radius: 5px;
+	-moz-border-radius-topleft: 5px;
+	border-top-left-radius: 5px;
+}
+.jqcmd_menu ul {
+	margin: 0;
+	padding: 0;
+}
+.jqcmd_menu ul li a {
+	color: #F00;
+	text-decoration: none;
+	font-weight: bold;
+}
+.jqcmd_menu ul li {
+	list-style: none;
+	display: inline-block;
+}
+.jqcmd_menu:hover {
+	opacity: 1;
+}
 .jqcmd.black {
 	background: #000;
 	color: #FFF;	
