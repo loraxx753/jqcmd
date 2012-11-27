@@ -328,9 +328,9 @@
 			}
 		}
 
-		var viLoad = function(fileText) {
+		var viLoad = function(fileText, newFile) {
 			
-			$(".jqcmd_window").hide().after("<div id='viWindow'>"+fileText+"</div><p id='viInput'></p>");
+			$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
 			var docHeight = $(window).height();
 			$("#viWindow").prepend("<p id='current_line'><span id='viPointer'></span></p>");
 			var x = 0;
