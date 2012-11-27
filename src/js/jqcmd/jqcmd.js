@@ -4,6 +4,7 @@
 	 */
 	$.fn.jqcmd = function( custom ) {
 		$this = $(this);
+		vicommand = false;
 		// Keeps track of where the user is in the file tree  
 		var directory = new Array();
 		if(typeof(Storage)!=="undefined")
@@ -324,7 +325,8 @@
 						newFile = true;
 					}
 					viLoad(fileText, newFile);
-				}
+				},
+				help : "A simple text editor for the command line",
 			}
 		}
 
@@ -332,7 +334,7 @@
 			
 			$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
 			var docHeight = $(window).height();
-			$("#viWindow").prepend("<p id='current_line'><span id='viPointer'></span></p>");
+			$("#viWindow").prepend("<p id='current_line'><span class='input'></span><span id='viPointer'></span></p>");
 			var x = 0;
 			while(x < 100)
 			{
@@ -348,158 +350,45 @@
 
 		var viKeyDown = function(e)
 		{
-
-		}
-		var viKeyPress = function(e)
-		{
-			var keycode = null;
-			if(window.event) {
-				keycode = window.event.keyCode;
-			}else if(e) {
-				keycode = e.which;
-			}
-			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
-			if(keycode != 13 && e.ctrlKey == false)
-			{
-				var key = String.fromCharCode(keycode);
-				if(key == "a")
-				{
-					$("#viInput").html("-- INSERT --");
-					$this.unbind("keypress");
-					$this.unbind("keydown");
-					$this.bind("keypress", viInsertKeyPress);
-					$this.bind("keydown", viInsertKeyDown);
-				}
-			}
-			else {
-				if($("#viInput").html() != '')
-				{
-					alert("return!");
-				}
-			}
-		}
-
-		var viInsertKeyDown = function(e)
-		{
-			if(window.event) {
-				keycode = window.event.keyCode;
-			}else if(e) {
-				keycode = e.which;
-			}
-
-			if(keycode == 27)
-			{
-				$this.unbind("keypress");
-				$this.unbind("keydown");
-				$this.bind("keypress", viKeyPress);
-				$this.bind("keydown", viKeyDown);
-				$("#viInput").html("");
-			}
-		}
-
-		var viInsertKeyPress = function(e)
-		{
-			var keycode = null;
-			if(window.event) {
-				keycode = window.event.keyCode;
-			}else if(e) {
-				keycode = e.which;
-			}
-			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
-			if(keycode != 13 && e.ctrlKey == false)
-			{
-				var key = String.fromCharCode(keycode);
-				$("#current_line #viPointer").before(key);
-			}
-		}
-
-		/**
-		 * Gets the current directory in the file tree and returns that part of the object
-		 * @return {object} 
-		 */
-		var getCurrentDirectory = function()
-		{
-			var current = settings.fileSystem;
-			for(i in directory)
-			{
-				current = current[directory[i]];
-			}
-			return current;
-		}
-
-		var objectToString = function(o){
-		    
-		    var parse = function(_o){
-		    
-		        var a = [], t;
-		        
-		        for(var p in _o){
-		        
-		            if(_o.hasOwnProperty(p)){
-		            
-		                t = _o[p];
-		                
-		                if(t && typeof t == "object"){
-		                
-		                    a[a.length]= p + ":{" + arguments.callee(t).join(", ") + "}";
-		                    
-		                }
-		                else {
-		                    
-		                    if(typeof t == "string"){
-		                    
-		                        a[a.length] = [ p+ ":\"" + t.toString() + "\"" ];
-		                    }
-		                    else{
-		                        a[a.length] = [ p+ ":" + t.toString()];
-		                    }
-		                    
-		                }
-		            }
-		        }
-		        
-		        return a;
-		        
-		    }
-		    
-		    return "{" + parse(o).join(", ") + "}";
-		}    
-
-
-		var mainKeyDown = function(e) {
-			$pointer = $("#pointer");
+			$pointer = $("#viPointer");
 			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
-			if(e.which == 46) //delete key
+			navigation($pointer, e);
+		}
+		var navigation = function($pointer, e, deleteOption)
+		{
+			if(!deleteOption){
+				deleteOption = false;
+			}
+			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+			if(deleteOption == true)
 			{
-				if(inTheMiddle)
+				if(e.which == 46) //delete key
 				{
-					var input = $pointer.prev().children(".after").text();
-					var slicedString = input.slice(1);
-					var firstLetter = input.slice(0, 1);
-					$pointer.prev().children(".selected").text(firstLetter);
-					$pointer.prev().children(".after").text(slicedString);
+					if(inTheMiddle)
+					{
+						var input = $pointer.prev().children(".after").text();
+						var slicedString = input.slice(1);
+						var firstLetter = input.slice(0, 1);
+						$pointer.prev().children(".selected").text(firstLetter);
+						$pointer.prev().children(".after").text(slicedString);
+					}
+				}
+				else if(e.which == 8) //backspace
+				{
+					e.preventDefault();
+					if(inTheMiddle)
+					{
+						var string = $pointer.prev().children(".before").text().slice(0, -1);
+						$pointer.prev().children(".before").text(string);
+					}
+					else
+					{
+						var string = $pointer.prev().text().slice(0, -1);
+						$pointer.prev().text(string);						
+					}
 				}
 			}
-			else if(e.which == 9) //tab
-			{
-				e.preventDefault();
-				complete($pointer.prev());
-			}
-			else if(e.which == 8) //backspace
-			{
-				e.preventDefault();
-				if(inTheMiddle)
-				{
-					var string = $pointer.prev().children(".before").text().slice(0, -1);
-					$pointer.prev().children(".before").text(string);
-				}
-				else
-				{
-					var string = $pointer.prev().text().slice(0, -1);
-					$pointer.prev().text(string);						
-				}
-			}
-			else if(e.which == 37) //left arrow
+			if(e.which == 37) //left arrow
 			{
 				if(inTheMiddle)
 				{
@@ -530,6 +419,157 @@
 					$pointer.prev().children(".selected").text(firstLetter);
 					$pointer.prev().children(".after").text(slicedString);
 				}
+			}		
+		}
+		var viKeyPress = function(e)
+		{
+			var keycode = null;
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+			if(keycode != 13 && e.ctrlKey == false)
+			{
+				var key = String.fromCharCode(keycode);
+				if(!vicommand)
+				{
+					if(key == "a")
+					{
+						$("#viInput").html("-- INSERT --");
+						$this.unbind("keypress");
+						$this.unbind("keydown");
+						$this.bind("keypress", viInsertKeyPress);
+						$this.bind("keydown", viInsertKeyDown);
+					}
+					else if(keycode == 58)
+					{
+						$("#viInput").html(":<span class='commandPointer'></span>");
+						$("#viPointer").hide();
+						vicommand = true;
+					}					
+				}
+				else
+				{
+					$("#viInput").append(key);
+				}
+			}
+			else {
+				if($("#viInput").html() != '')
+				{
+					//alert("return!");
+				}
+			}
+		}
+
+		var viInsertKeyDown = function(e)
+		{
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			$pointer = $("#viPointer");
+			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+
+			if(keycode == 27)
+			{
+				$this.unbind("keypress");
+				$this.unbind("keydown");
+				$this.bind("keypress", viKeyPress);
+				$this.bind("keydown", viKeyDown);
+				$("#viInput").html("");
+			}
+			navigation($pointer, e, true);
+		}
+
+		var viInsertKeyPress = function(e)
+		{
+			var keycode = null;
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+			if(keycode != 13 && e.ctrlKey == false)
+			{
+				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+				var key = String.fromCharCode(keycode);
+				if(inTheMiddle)
+				{
+					$pointer.prev().children(".before").append(key);
+				}
+				else
+				{
+					$("#current_line .input").append(key);
+				}
+			}
+			else
+			{
+				if($("#current_line").next().hasClass("empty"))
+				{
+					$next = $("#current_line").next();
+					$("#current_line").html($("#current_line").text());
+					$("#current_line").removeAttr("id");
+					$next.attr("id", "current_line").html("<span class='input'></span><span id='viPointer'></span>")
+				}
+			}
+		}
+
+		/**
+		 * Gets the current directory in the file tree and returns that part of the object
+		 * @return {object} 
+		 */
+		var getCurrentDirectory = function()
+		{
+			var current = settings.fileSystem;
+			for(i in directory)
+			{
+				current = current[directory[i]];
+			}
+			return current;
+		}
+
+		var objectToString = function(o){
+		    
+		    var parse = function(_o){
+		    
+		        var a = [], t;
+		        
+		        for(var p in _o){
+		        
+		            if(_o.hasOwnProperty(p)){
+		            
+		                t = _o[p];
+		                if(t && typeof t == "object"){
+		                    a[a.length]= p + ":{" + arguments.callee(t).join(", ") + "}";
+		                }
+		                else {		                    
+		                    if(typeof t == "string"){
+		                        a[a.length] = [ p+ ":\"" + t.toString() + "\"" ];
+		                    }
+		                    else{
+		                        a[a.length] = [ p+ ":" + t.toString()];
+		                    }		                    
+		                }
+		            }
+		        }
+		        return a;		        
+		    }
+		    return "{" + parse(o).join(", ") + "}";
+		}    
+
+
+		var mainKeyDown = function(e) {
+			$pointer = $("#pointer");
+			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+
+			if(e.which == 9) //tab
+			{
+				e.preventDefault();
+				complete($pointer.prev());
 			}
 			else if(e.which == 38 ) //up arrow
 			{
@@ -562,6 +602,10 @@
 				{
 					$("#pointer").prev().text(history[pointer]);
 				}
+			}
+			else
+			{
+				navigation($pointer, e, true);
 			}
 		}
 
