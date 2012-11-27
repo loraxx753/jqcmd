@@ -311,9 +311,19 @@
 			vi : {
 				execute : function(params) {
 					current = getCurrentDirectory();
-					console.log(current);
-					var fileText = current._files[params.target].contents;
-					viLoad(fileText);
+					var fileText;
+					var newFile;
+					if(current._files[params.target])
+					{
+						fileText = current._files[params.target].contents;
+						newFile = false;
+					}
+					else
+					{
+						fileText = "";
+						newFile = true;
+					}
+					viLoad(fileText, newFile);
 				}
 			}
 		}
@@ -321,11 +331,19 @@
 		var viLoad = function(fileText) {
 			
 			$(".jqcmd_window").hide().after("<div id='viWindow'>"+fileText+"</div><p id='viInput'></p>");
-			$(this).unbind("keydown.mainProgram");
-			$(this).unbind("keypress.mainProgram");
+			var docHeight = $(window).height();
+			$("#viWindow").prepend("<p id='current_line'><span id='viPointer'></span></p>");
+			var x = 0;
+			while(x < 100)
+			{
+				$("#viWindow").append("<p class='empty'>~</p>");
+				x++;
+			}
+			$(this).unbind("keydown");
+			$(this).unbind("keypress");
 
-			$(this).bind("keydown.viProgram", viKeyDown);
-			$(this).bind("keypress.viProgram", viKeyPress);
+			$(this).bind("keydown", viKeyDown);
+			$(this).bind("keypress", viKeyPress);
 		}
 
 		var viKeyDown = function(e)
@@ -347,11 +365,10 @@
 				if(key == "a")
 				{
 					$("#viInput").html("-- INSERT --");
-					$this.unbind("keypress.viProgram");
-					$this.unbind("keydown.viProgram");
-					$this.bind("keypress.viInsert", viInsertKeyPress);
-					$this.bind("keydown.viInsert", viInsertKeyDown);
-
+					$this.unbind("keypress");
+					$this.unbind("keydown");
+					$this.bind("keypress", viInsertKeyPress);
+					$this.bind("keydown", viInsertKeyDown);
 				}
 			}
 			else {
@@ -372,10 +389,10 @@
 
 			if(keycode == 27)
 			{
-				$this.unbind("keypress.viInsert");
-				$this.unbind("keydown.viInsert");
-				$this.bind("keypress.viProgram", viKeyPress);
-				$this.bind("keydown.viProgram", viKeyDown);
+				$this.unbind("keypress");
+				$this.unbind("keydown");
+				$this.bind("keypress", viKeyPress);
+				$this.bind("keydown", viKeyDown);
 				$("#viInput").html("");
 			}
 		}
@@ -392,7 +409,7 @@
 			if(keycode != 13 && e.ctrlKey == false)
 			{
 				var key = String.fromCharCode(keycode);
-				$("#viWindow").append(key);
+				$("#current_line #viPointer").before(key);
 			}
 		}
 
@@ -629,8 +646,8 @@
 				other.document.write(preparedString);
 			});
 
-			$this.bind("keydown.mainProgram", mainKeyDown);
-			$this.bind("keypress.mainProgram", mainKeyPress);
+			$this.bind("keydown", mainKeyDown);
+			$this.bind("keypress", mainKeyPress);
 		});
 	};
 })( jQuery );
