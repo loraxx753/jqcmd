@@ -115,5 +115,8 @@
 	display: inline-block;
 }
 
-
-/* Blinker animation */
+/* VI DISPLAY */
+#viInput {
+	position: fixed;
+	bottom: 0;
+}

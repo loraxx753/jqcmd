@@ -31,9 +31,7 @@ var filesystem = {
 		_files : {
 			"resume.txt" : {
 				about : "Resume",
-				execute : function() {
-					return "<h1>Resume</h1><p>Work I've done: <ul><li>one</li><li>two</li></ul>";
-				},
+				contents : "<h1>Resume</h1><p>Work I've done: <ul><li>one</li><li>two</li></ul>",
 			}
 		}
 	},
@@ -52,6 +50,7 @@ var filesystem = {
 		}
 	},
 	_files : {
-		".ignore" : {}
+		".ignore" : {},
+		"new.txt" : {}
 	}
 }

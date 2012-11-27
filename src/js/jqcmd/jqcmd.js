@@ -3,6 +3,7 @@
 	 * Command line prompt plugin. Emulates simple linux style command line prompt
 	 */
 	$.fn.jqcmd = function( custom ) {
+		$this = $(this);
 		// Keeps track of where the user is in the file tree  
 		var directory = new Array();
 		if(typeof(Storage)!=="undefined")
@@ -306,6 +307,92 @@
 					delete current._files[params.target]
 				},
 				help : "Removes a file from the file tree",
+			},
+			vi : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					console.log(current);
+					var fileText = current._files[params.target].contents;
+					viLoad(fileText);
+				}
+			}
+		}
+
+		var viLoad = function(fileText) {
+			
+			$(".jqcmd_window").hide().after("<div id='viWindow'>"+fileText+"</div><p id='viInput'></p>");
+			$(this).unbind("keydown.mainProgram");
+			$(this).unbind("keypress.mainProgram");
+
+			$(this).bind("keydown.viProgram", viKeyDown);
+			$(this).bind("keypress.viProgram", viKeyPress);
+		}
+
+		var viKeyDown = function(e)
+		{
+
+		}
+		var viKeyPress = function(e)
+		{
+			var keycode = null;
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+			if(keycode != 13 && e.ctrlKey == false)
+			{
+				var key = String.fromCharCode(keycode);
+				if(key == "a")
+				{
+					$("#viInput").html("-- INSERT --");
+					$this.unbind("keypress.viProgram");
+					$this.unbind("keydown.viProgram");
+					$this.bind("keypress.viInsert", viInsertKeyPress);
+					$this.bind("keydown.viInsert", viInsertKeyDown);
+
+				}
+			}
+			else {
+				if($("#viInput").html() != '')
+				{
+					alert("return!");
+				}
+			}
+		}
+
+		var viInsertKeyDown = function(e)
+		{
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+
+			if(keycode == 27)
+			{
+				$this.unbind("keypress.viInsert");
+				$this.unbind("keydown.viInsert");
+				$this.bind("keypress.viProgram", viKeyPress);
+				$this.bind("keydown.viProgram", viKeyDown);
+				$("#viInput").html("");
+			}
+		}
+
+		var viInsertKeyPress = function(e)
+		{
+			var keycode = null;
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+			if(keycode != 13 && e.ctrlKey == false)
+			{
+				var key = String.fromCharCode(keycode);
+				$("#viWindow").append(key);
 			}
 		}
 
@@ -359,8 +446,167 @@
 		    }
 		    
 		    return "{" + parse(o).join(", ") + "}";
-		    
 		}    
+
+
+		var mainKeyDown = function(e) {
+			$pointer = $("#pointer");
+			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+			if(e.which == 46) //delete key
+			{
+				if(inTheMiddle)
+				{
+					var input = $pointer.prev().children(".after").text();
+					var slicedString = input.slice(1);
+					var firstLetter = input.slice(0, 1);
+					$pointer.prev().children(".selected").text(firstLetter);
+					$pointer.prev().children(".after").text(slicedString);
+				}
+			}
+			else if(e.which == 9) //tab
+			{
+				e.preventDefault();
+				complete($pointer.prev());
+			}
+			else if(e.which == 8) //backspace
+			{
+				e.preventDefault();
+				if(inTheMiddle)
+				{
+					var string = $pointer.prev().children(".before").text().slice(0, -1);
+					$pointer.prev().children(".before").text(string);
+				}
+				else
+				{
+					var string = $pointer.prev().text().slice(0, -1);
+					$pointer.prev().text(string);						
+				}
+			}
+			else if(e.which == 37) //left arrow
+			{
+				if(inTheMiddle)
+				{
+					var input = $pointer.prev().children(".before").text();
+					var slicedString = input.slice(0, -1);
+					var lastLetter = input.slice(-1);
+					$pointer.prev().children(".after").text($pointer.prev().children(".selected").text()+$pointer.prev().children(".after").text());
+					$pointer.prev().children(".selected").text(lastLetter);
+					$pointer.prev().children(".before").text(slicedString);
+				}
+				else
+				{
+					var input = $pointer.prev().text();
+					var slicedString = input.slice(0, -1);
+					var lastLetter = input.slice(-1);
+					$pointer.hide();
+					$pointer.prev().html("<span class='before'>"+slicedString+"</span><span class='selected'>"+lastLetter+"</span><span class='after'></span>");
+				}
+			}
+			else if(e.which == 39) //right arrow
+			{
+				if(inTheMiddle)
+				{
+					var input = $pointer.prev().children(".after").text();
+					var slicedString = input.slice(1);
+					var firstLetter = input.slice(0, 1);
+					$pointer.prev().children(".before").text($pointer.prev().children(".before").text()+$pointer.prev().children(".selected").text());
+					$pointer.prev().children(".selected").text(firstLetter);
+					$pointer.prev().children(".after").text(slicedString);
+				}
+			}
+			else if(e.which == 38 ) //up arrow
+			{
+				e.preventDefault();
+				if(pointer < 0)
+				{
+					pointer = history.length-1;
+				}
+				else if(pointer > 0)
+				{
+					pointer--;
+				}
+				if(pointer >= 0)
+				{
+					$("#pointer").prev().text(history[pointer]);
+				}
+			}
+			else if(e.which == 40) //down arrow
+			{
+				e.preventDefault();
+				if(pointer > history.length-1)
+				{
+					pointer = history.length-1;
+				}
+				else if(pointer != history.length-1)
+				{
+					pointer++;
+				}
+				if(pointer <= history.length-1)
+				{
+					$("#pointer").prev().text(history[pointer]);
+				}
+			}
+		}
+
+		var mainKeyPress = function(e) {
+			$pointer = $("#pointer");
+			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+			var keycode = null;
+			if(window.event) {
+				keycode = window.event.keyCode;
+			}else if(e) {
+				keycode = e.which;
+			}
+			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+			if(keycode != 13 && e.ctrlKey == false)
+			{
+				var key = String.fromCharCode(keycode);
+				if(inTheMiddle)
+				{
+					$pointer.prev().children(".before").append(key);
+				}
+				else
+				{
+					$pointer.prev().append(key);						
+				}
+			}
+			else
+			{
+				pointer = -1;
+				// Run the function and get the input
+				var output = run($("#pointer").prev().text());
+				//clone a new line
+				newLine = line.clone();
+				// if the output doesn't clear the console
+				if(output != "clearConsole")
+				{
+					// Append the current filetree location to the hostname
+					var staticText = $(newLine).children(".static").text();
+					for(i in directory)
+					{
+						if(directory[i] != "root")
+						{
+							staticText += "/"+directory[i];
+						}
+						$(newLine).children(".static").text(staticText);
+					}
+					// If there is output then print it to the screen.	
+					if(output != undefined)
+					{
+						$('#pointer').parent().after("<div class='output'>"+output+"</div>");
+						$('#pointer').remove();
+						$('.output:last-child').after(newLine);					
+					}
+					else
+					{
+						$('#pointer').parent().after(newLine);
+						$('#pointer').remove();
+					}
+				}
+			}
+			// Keep the scrollbar at the bottom of the screen.
+			$this.animate({ scrollTop: $this[0].scrollHeight }, "fast");
+		}
 
 		// This is where the real meat of everything is....
 		return this.each(function() {
@@ -383,163 +629,8 @@
 				other.document.write(preparedString);
 			});
 
-			$this.keydown(function(e) {
-				$pointer = $("#pointer");
-				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
-				if(e.which == 46) //delete key
-				{
-					if(inTheMiddle)
-					{
-						var input = $pointer.prev().children(".after").text();
-						var slicedString = input.slice(1);
-						var firstLetter = input.slice(0, 1);
-						$pointer.prev().children(".selected").text(firstLetter);
-						$pointer.prev().children(".after").text(slicedString);
-					}
-				}
-				else if(e.which == 9) //tab
-				{
-					e.preventDefault();
-					complete($pointer.prev());
-				}
-				else if(e.which == 8) //backspace
-				{
-					e.preventDefault();
-					if(inTheMiddle)
-					{
-						var string = $pointer.prev().children(".before").text().slice(0, -1);
-						$pointer.prev().children(".before").text(string);
-					}
-					else
-					{
-						var string = $pointer.prev().text().slice(0, -1);
-						$pointer.prev().text(string);						
-					}
-				}
-				else if(e.which == 37) //left arrow
-				{
-					if(inTheMiddle)
-					{
-						var input = $pointer.prev().children(".before").text();
-						var slicedString = input.slice(0, -1);
-						var lastLetter = input.slice(-1);
-						$pointer.prev().children(".after").text($pointer.prev().children(".selected").text()+$pointer.prev().children(".after").text());
-						$pointer.prev().children(".selected").text(lastLetter);
-						$pointer.prev().children(".before").text(slicedString);
-					}
-					else
-					{
-						var input = $pointer.prev().text();
-						var slicedString = input.slice(0, -1);
-						var lastLetter = input.slice(-1);
-						$pointer.hide();
-						$pointer.prev().html("<span class='before'>"+slicedString+"</span><span class='selected'>"+lastLetter+"</span><span class='after'></span>");
-					}
-				}
-				else if(e.which == 39) //right arrow
-				{
-					if(inTheMiddle)
-					{
-						var input = $pointer.prev().children(".after").text();
-						var slicedString = input.slice(1);
-						var firstLetter = input.slice(0, 1);
-						$pointer.prev().children(".before").text($pointer.prev().children(".before").text()+$pointer.prev().children(".selected").text());
-						$pointer.prev().children(".selected").text(firstLetter);
-						$pointer.prev().children(".after").text(slicedString);
-					}
-				}
-				else if(e.which == 38 ) //up arrow
-				{
-					e.preventDefault();
-					if(pointer < 0)
-					{
-						pointer = history.length-1;
-					}
-					else if(pointer > 0)
-					{
-						pointer--;
-					}
-					if(pointer >= 0)
-					{
-						$("#pointer").prev().text(history[pointer]);
-					}
-				}
-				else if(e.which == 40) //down arrow
-				{
-					e.preventDefault();
-					if(pointer > history.length-1)
-					{
-						pointer = history.length-1;
-					}
-					else if(pointer != history.length-1)
-					{
-						pointer++;
-					}
-					if(pointer <= history.length-1)
-					{
-						$("#pointer").prev().text(history[pointer]);
-					}
-				}
-			});
-			$this.keypress(function(e) {
-				$pointer = $("#pointer");
-				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
-				var keycode = null;
-				if(window.event) {
-					keycode = window.event.keyCode;
-				}else if(e) {
-					keycode = e.which;
-				}
-				// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
-				if(keycode != 13 && e.ctrlKey == false)
-				{
-					var key = String.fromCharCode(keycode);
-					if(inTheMiddle)
-					{
-						$pointer.prev().children(".before").append(key);
-					}
-					else
-					{
-						$pointer.prev().append(key);						
-					}
-				}
-				else
-				{
-					pointer = -1;
-					// Run the function and get the input
-					var output = run($("#pointer").prev().text());
-					//clone a new line
-					newLine = line.clone();
-					// if the output doesn't clear the console
-					if(output != "clearConsole")
-					{
-						// Append the current filetree location to the hostname
-						var staticText = $(newLine).children(".static").text();
-						for(i in directory)
-						{
-							if(directory[i] != "root")
-							{
-								staticText += "/"+directory[i];
-							}
-							$(newLine).children(".static").text(staticText);
-						}
-						// If there is output then print it to the screen.	
-						if(output != undefined)
-						{
-							$('#pointer').parent().after("<div class='output'>"+output+"</div>");
-							$('#pointer').remove();
-							$('.output:last-child').after(newLine);					
-						}
-						else
-						{
-							$('#pointer').parent().after(newLine);
-							$('#pointer').remove();
-						}
-					}
-				}
-				// Keep the scrollbar at the bottom of the screen.
-				$this.animate({ scrollTop: $this[0].scrollHeight }, "fast");
-			});
+			$this.bind("keydown.mainProgram", mainKeyDown);
+			$this.bind("keypress.mainProgram", mainKeyPress);
 		});
 	};
 })( jQuery );
