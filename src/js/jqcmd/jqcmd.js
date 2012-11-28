@@ -4,7 +4,11 @@
 	 */
 	$.fn.jqcmd = function( custom ) {
 		$this = $(this);
-		vicommand = false;
+		vi = {
+			command : false,
+			file : '',
+			newFile : false,
+		}
 		// Keeps track of where the user is in the file tree  
 		var directory = new Array();
 		if(typeof(Storage)!=="undefined")
@@ -317,44 +321,21 @@
 					if(current._files[params.target])
 					{
 						fileText = current._files[params.target].contents;
-						newFile = false;
+						vi.newFile = false;
 					}
 					else
 					{
+						vi.newFile = true;
 						fileText = "";
-						newFile = true;
 					}
+					vi.filename = params.target;
 					viLoad(fileText, newFile);
 				},
 				help : "A simple text editor for the command line",
 			}
 		}
 
-		var viLoad = function(fileText, newFile) {
-			
-			$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
-			var docHeight = $(window).height();
-			$("#viWindow").prepend("<p id='current_line'><span class='input'></span><span id='viPointer'></span></p>");
-			var x = 0;
-			while(x < 100)
-			{
-				$("#viWindow").append("<p class='empty'>~</p>");
-				x++;
-			}
-			$(this).unbind("keydown");
-			$(this).unbind("keypress");
-
-			$(this).bind("keydown", viKeyDown);
-			$(this).bind("keypress", viKeyPress);
-		}
-
-		var viKeyDown = function(e)
-		{
-			$pointer = $("#viPointer");
-			var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
-			navigation($pointer, e);
-		}
-		var navigation = function($pointer, e, deleteOption)
+		var navigation = function($pointer, e, deleteOption, callback)
 		{
 			if(!deleteOption){
 				deleteOption = false;
@@ -386,6 +367,18 @@
 						var string = $pointer.prev().text().slice(0, -1);
 						$pointer.prev().text(string);						
 					}
+					if($pointer.prev().text() == '')
+					{
+						$pointer.prev().html($pointer.prev().text());
+						$pointer.show();
+					}
+				}
+			}
+			else
+			{
+				if(e.which == 8)
+				{
+					e.preventDefault();
 				}
 			}
 			if(e.which == 37) //left arrow
@@ -393,11 +386,14 @@
 				if(inTheMiddle)
 				{
 					var input = $pointer.prev().children(".before").text();
-					var slicedString = input.slice(0, -1);
-					var lastLetter = input.slice(-1);
-					$pointer.prev().children(".after").text($pointer.prev().children(".selected").text()+$pointer.prev().children(".after").text());
-					$pointer.prev().children(".selected").text(lastLetter);
-					$pointer.prev().children(".before").text(slicedString);
+					if(input.length > 0)
+					{
+						var slicedString = input.slice(0, -1);
+						var lastLetter = input.slice(-1);
+						$pointer.prev().children(".after").text($pointer.prev().children(".selected").text()+$pointer.prev().children(".after").text());
+						$pointer.prev().children(".selected").text(lastLetter);
+						$pointer.prev().children(".before").text(slicedString);						
+					}
 				}
 				else
 				{
@@ -419,7 +415,67 @@
 					$pointer.prev().children(".selected").text(firstLetter);
 					$pointer.prev().children(".after").text(slicedString);
 				}
-			}		
+			}
+
+			if(callback)
+			{
+				callback();
+			}	
+		}
+		var viLoad = function(fileText, newFile) {
+			
+			$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
+			var docHeight = $(window).height();
+			$("#viWindow").prepend("<p id='current_line'><span class='input'></span><span id='viPointer'></span></p>");
+			var x = 0;
+			while(x < 100)
+			{
+				$("#viWindow").append("<p class='empty'>~</p>");
+				x++;
+			}
+			$this.off("keydown.mainKeyDown");
+			$this.off("keypress.mainKeyPress");
+
+			$this.on("keydown.viKeyDown", viKeyDown);
+			$this.on("keypress.viKeyPress", viKeyPress);
+		}
+		var viUnload = function() {
+			vi.command = false;
+			$("#viWindow").remove();
+			$("#viInput").remove();
+			$(".jqcmd_window").show();
+			$this.off("keydown.viKeyDown");
+			$this.off("keypress.viKeyPress");
+			$this.on("keydown.mainKeyDown", mainKeyDown);
+			$this.on("keypress.mainKeyPress", mainKeyPress);
+
+		}
+
+		var viKeyDown = function(e)
+		{
+			if(!vi.command)
+			{
+				$pointer = $("#viPointer");
+				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+				navigation($pointer, e);
+			}
+			else
+			{
+				$pointer = $("#commandPointer");
+				var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+				navigation($pointer, e, true, function() {
+					if(e.which == 8 && $pointer.prev().text() == '')
+					{
+						$("#viInput").html('');
+						$("#viPointer").show();
+						if($("#viPointer").prev().children(".pointerHolder").length > 0)
+						{
+							$("#viPointer").prev().children(".pointerHolder").remove();
+						}
+						vi.command = false;					
+					}
+				});		
+			}
 		}
 		var viKeyPress = function(e)
 		{
@@ -429,37 +485,83 @@
 			}else if(e) {
 				keycode = e.which;
 			}
-			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
-			if(keycode != 13 && e.ctrlKey == false)
+			var key = String.fromCharCode(keycode);
+			if(!vi.command)
 			{
-				var key = String.fromCharCode(keycode);
-				if(!vicommand)
+				if(key == "a")
 				{
-					if(key == "a")
+					$("#viInput").html("-- INSERT --");
+					$this.off("keypress.viKeyPress");
+					$this.off("keydown.viKeyDown");
+					$this.on("keypress.viInsertKeyPress", viInsertKeyPress);
+					$this.on("keydown.viInsertKeyDown", viInsertKeyDown);
+				}
+				else if(keycode == 58) //colon
+				{
+					$("#viInput").html("<span>:</span><span id='commandPointer' class='blinker'></span>");
+					$("#viPointer").hide();
+					if($("#viPointer").prev().text() == '')
 					{
-						$("#viInput").html("-- INSERT --");
-						$this.unbind("keypress");
-						$this.unbind("keydown");
-						$this.bind("keypress", viInsertKeyPress);
-						$this.bind("keydown", viInsertKeyDown);
+						$("#viPointer").prev().html("<span class='pointerHolder'> </span>")
 					}
-					else if(keycode == 58)
+					vi.command = true;
+				}					
+			}
+			else
+			{
+				// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
+				if(keycode != 13 && e.ctrlKey == false)
+				{
+					var inTheMiddle = ($pointer.prev().children(".before").length > 0) ? true : false;
+					var key = String.fromCharCode(keycode);
+					if(inTheMiddle)
 					{
-						$("#viInput").html(":<span class='commandPointer'></span>");
-						$("#viPointer").hide();
-						vicommand = true;
-					}					
+						$pointer.prev().children(".before").append(key);
+					}
+					else
+					{
+						$("#commandPointer").prev().append(key);
+					}
 				}
 				else
 				{
-					$("#viInput").append(key);
+					var commandInput = $pointer.prev().text().slice(1);
+					processInput(commandInput);
 				}
 			}
-			else {
-				if($("#viInput").html() != '')
-				{
-					//alert("return!");
-				}
+		}
+
+		var processInput = function(command)
+		{
+			switch(command)
+			{
+				case "q!":
+					viUnload();
+					break;
+				case "wq":
+					current = getCurrentDirectory();
+					if(vi.newFile == true)
+					{
+						viCreateFile();
+					}
+					else
+					{
+						alert("old file");
+					}
+					viUnload();
+					break;
+			}
+		}
+
+		var viCreateFile = function()
+		{
+			if(vi.filename.match(/\.exe$/))
+			{
+				alert("exe");
+			}
+			else
+			{
+				alert("not exe");
 			}
 		}
 
@@ -475,10 +577,11 @@
 
 			if(keycode == 27)
 			{
-				$this.unbind("keypress");
-				$this.unbind("keydown");
-				$this.bind("keypress", viKeyPress);
-				$this.bind("keydown", viKeyDown);
+				$this.off("keypress.viInsertKeyPress");
+				$this.off("keydown.viInsertKeyDown");
+				$this.on("keydown.viKeyDown", viKeyDown);
+				$this.on("keypress.viKeyPress", viKeyPress);
+				
 				$("#viInput").html("");
 			}
 			navigation($pointer, e, true);
@@ -671,7 +774,6 @@
 
 		// This is where the real meat of everything is....
 		return this.each(function() {
-			$this = $(this);
 			// Add the jqcmd class and the style class
 			$this.addClass("jqcmd").addClass(settings.style);
 			$this.css("position", "relative");
@@ -690,8 +792,8 @@
 				other.document.write(preparedString);
 			});
 
-			$this.bind("keydown", mainKeyDown);
-			$this.bind("keypress", mainKeyPress);
+			$this.on("keydown.mainKeyDown", mainKeyDown);
+			$this.on("keypress.mainKeyPress", mainKeyPress);
 		});
 	};
 })( jQuery );

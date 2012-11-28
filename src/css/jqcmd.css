@@ -6,6 +6,9 @@
 	position: relative;
 	margin: 0;
 }
+.jqcmd p {
+	white-space: pre;
+}
 .jqcmd_menu {
 	font-family: Arial,Helvetica,sans-serif;
 	opacity: 0.3;
@@ -55,7 +58,7 @@
 	outline: none;
 }
 
-.jqcmd #pointer, .jqcmd .selected, .jqcmd #viPointer {
+.jqcmd #pointer, .jqcmd .selected, .jqcmd #viPointer, .blinker {
 	display: inline-block;
 	background: #FFF;
 	height: 1em;
@@ -79,7 +82,7 @@
 
 /* Blinker animation */
 
-.jqcmd #pointer, .jqcmd .selected, .jqcmd #viPointer {
+.jqcmd #pointer, .jqcmd .selected, .jqcmd #viPointer, .blinker {
     -webkit-animation-direction: normal;
     -webkit-animation-duration: 1s;
     -webkit-animation-iteration-count: infinite;
