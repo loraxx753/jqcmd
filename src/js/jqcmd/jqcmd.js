@@ -3,6 +3,34 @@
 	 * Command line prompt plugin. Emulates simple linux style command line prompt
 	 */
 	$.fn.jqcmd = function( custom ) {
+		var objectToString = function(o){
+		    
+		    var parse = function(_o){
+		    
+		        var a = [], t;
+		        
+		        for(var p in _o){
+		        
+		            if(_o.hasOwnProperty(p)){
+		            
+		                t = _o[p];
+		                if(t && typeof t == "object"){
+		                    a[a.length]= '"'+p+'"' + ":{" + arguments.callee(t).join(", ") + "}";
+		                }
+		                else {		                    
+		                    if(typeof t == "string"){
+		                        a[a.length] = [ '"'+p+'"'+ ":\"" + t.toString() + "\"" ];
+		                    }
+		                    else{
+		                        a[a.length] = [ '"'+p+'"'+ ":" + t.toString()];
+		                    }		                    
+		                }
+		            }
+		        }
+		        return a;		        
+		    }
+		    return "{" + parse(o).join(", ") + "}";
+		}    
 		$this = $(this);
 		vi = {
 			command : false,
@@ -41,6 +69,19 @@
 			"style" : "black",
 			"loadScreen" : "",
 		}, custom);
+		
+		if(typeof(Storage)!=="undefined")
+		{
+			if(!localStorage.fileSystem)
+			{
+				localStorage.fileSystem = objectToString(settings.fileSystem);
+			}
+			else
+			{
+				var test = "return "+localStorage.fileSystem;
+				settings.fileSystem = (new Function(test))();
+			}
+		}
 
 		/**
 		 * Runs the command line task that was typed in
@@ -63,9 +104,15 @@
 					  window.open(current._files[call].location, '_blank');
 					  window.focus();
 				}
-				else
+				else if(call.match(/\.exe$/))
 				{
-					return current._files[call].execute();
+					try {
+						return current._files[call].execute();
+					}
+					catch(err)
+					{
+						return err.message;
+					}
 				}
 			}
 			else
@@ -188,6 +235,13 @@
 				$(input).text(returnText);
 			}
 		}
+
+		var fileTreeUpdate = function() {
+			if(typeof(Storage)!=="undefined")
+			{
+				localStorage.fileSystem = objectToString(settings.fileSystem);
+			}
+		}
 		/**
 		 * List of functions that can be used by the system
 		 * @type {Object}
@@ -205,6 +259,7 @@
 				execute : function(params) {
 					var output = "<ul>";
 					var current = getCurrentDirectory();
+					console.log(current);
 					if(current.location != null) 
 					{
 						for(i in current)
@@ -292,6 +347,7 @@
 				execute : function(params) {
 					current = getCurrentDirectory();
 					current[params.target] = {};
+					fileTreeUpdate();
 				},
 				help : "Makes a directory in the file tree"
 			},
@@ -303,6 +359,7 @@
 						current._files = {};
 					}
 					current._files[params.target] = {};
+					fileTreeUpdate();
 				},
 				help : "Creates a file, or if the file exists, updates the files timestamp",
 			},
@@ -310,6 +367,7 @@
 				execute : function(params) {
 					current = getCurrentDirectory();
 					delete current._files[params.target]
+					fileTreeUpdate();
 				},
 				help : "Removes a file from the file tree",
 			},
@@ -332,6 +390,20 @@
 					viLoad(fileText, newFile);
 				},
 				help : "A simple text editor for the command line",
+			},
+			cat : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					if(params.target.match(/\.exe$/))
+					{
+						return current._files[params.target].execute.toString();
+					}
+					else
+					{
+						return current._files[params.target].contents;						
+					}
+				},
+				help : "Print file contents to the screen",
 			}
 		}
 
@@ -448,6 +520,7 @@
 			$this.off("keypress.viKeyPress");
 			$this.on("keydown.mainKeyDown", mainKeyDown);
 			$this.on("keypress.mainKeyPress", mainKeyPress);
+			fileTreeUpdate();
 
 		}
 
@@ -540,9 +613,30 @@
 					break;
 				case "wq":
 					current = getCurrentDirectory();
+					$("#current_line").html($("#current_line").text());
+					$(".empty").remove();
 					if(vi.newFile == true)
 					{
-						viCreateFile();
+						if(vi.filename.match(/\.exe$/))
+						{
+							viCreateFile(vi.filename, $("#viWindow").text());
+						}
+						else
+						{
+							viCreateFile(vi.filename, $("#viWindow").html());
+						}
+					}
+					else
+					{
+						alert("old file");
+					}
+					viUnload();
+					break;
+				case "x":
+					current = getCurrentDirectory();
+					if(vi.newFile == true)
+					{
+						viCreateFile(vi.filename, txt);
 					}
 					else
 					{
@@ -553,18 +647,25 @@
 			}
 		}
 
-		var viCreateFile = function()
+		var viCreateFile = function(filename, txt)
 		{
-			if(vi.filename.match(/\.exe$/))
+			current = getCurrentDirectory();
+			if(filename.match(/\.exe$/))
 			{
-				alert("exe");
+				var adder = new Function(txt);
+				 
+				// console.log(func);
+				current._files[filename] =  {
+					execute : adder,
+				};
 			}
 			else
 			{
-				alert("not exe");
+				current._files[filename] =  {
+					contents : txt,
+				};
 			}
 		}
-
 		var viInsertKeyDown = function(e)
 		{
 			if(window.event) {
@@ -627,6 +728,7 @@
 		 */
 		var getCurrentDirectory = function()
 		{
+			console.log(settings);
 			var current = settings.fileSystem;
 			for(i in directory)
 			{
@@ -635,34 +737,6 @@
 			return current;
 		}
 
-		var objectToString = function(o){
-		    
-		    var parse = function(_o){
-		    
-		        var a = [], t;
-		        
-		        for(var p in _o){
-		        
-		            if(_o.hasOwnProperty(p)){
-		            
-		                t = _o[p];
-		                if(t && typeof t == "object"){
-		                    a[a.length]= p + ":{" + arguments.callee(t).join(", ") + "}";
-		                }
-		                else {		                    
-		                    if(typeof t == "string"){
-		                        a[a.length] = [ p+ ":\"" + t.toString() + "\"" ];
-		                    }
-		                    else{
-		                        a[a.length] = [ p+ ":" + t.toString()];
-		                    }		                    
-		                }
-		            }
-		        }
-		        return a;		        
-		    }
-		    return "{" + parse(o).join(", ") + "}";
-		}    
 
 
 		var mainKeyDown = function(e) {
