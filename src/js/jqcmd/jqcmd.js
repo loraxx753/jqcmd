@@ -30,7 +30,15 @@
 		        return a;		        
 		    }
 		    return "{" + parse(o).join(", ") + "}";
-		}    
+		}
+		var escapeQuotes = function(txt)
+		{
+			return txt.replace(/("|')/gi, "\\$1");
+		}
+		var scrapQuotes = function(txt)
+		{
+			return 	txt.replace(/\\("|')/gi, "$1");
+		}
 		$this = $(this);
 		vi = {
 			command : false,
@@ -79,6 +87,7 @@
 			else
 			{
 				var test = "return "+localStorage.fileSystem;
+				console.log(test);
 				settings.fileSystem = (new Function(test))();
 			}
 		}
@@ -119,16 +128,16 @@
 			{
 				params = getParts(call);
 				command = params.command;
-				// try
-				// {
+				try
+				{
 					return functions[command].execute(params);
-				// }
-				// catch(err)
-				// {
-				// 	console.log(err);
-				// 	parts = call.split(" ");
-				// 	return "That function does not exist. For help and a list of functions, type \"help\"";
-				// }
+				}
+				catch(err)
+				{
+					console.log(err);
+					parts = call.split(" ");
+					return "-bash: "+command+": command not found";
+				}
 
 			}
 		}
@@ -307,6 +316,20 @@
 				},
 				help : "displays help for the system"
 			},
+			cat : {
+				execute : function(params) {
+					current = getCurrentDirectory();
+					if(params.target.match(/\.exe$/))
+					{
+						return current._files[params.target].execute.toString();
+					}
+					else
+					{
+						return current._files[params.target].contents;						
+					}
+				},
+				help : "Print file contents to the screen",
+			},
 			cd : {
 				execute : function(params) {
 					if(params.target != "/")
@@ -391,20 +414,6 @@
 				},
 				help : "A simple text editor for the command line",
 			},
-			cat : {
-				execute : function(params) {
-					current = getCurrentDirectory();
-					if(params.target.match(/\.exe$/))
-					{
-						return current._files[params.target].execute.toString();
-					}
-					else
-					{
-						return current._files[params.target].contents;						
-					}
-				},
-				help : "Print file contents to the screen",
-			}
 		}
 
 		var navigation = function($pointer, e, deleteOption, callback)
@@ -498,7 +507,21 @@
 			
 			$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
 			var docHeight = $(window).height();
-			$("#viWindow").prepend("<p id='current_line'><span class='input'></span><span id='viPointer'></span></p>");
+			if(fileText == '')
+			{
+				$("#viWindow").prepend("<p id='current_line'><span class='input'></span><span id='viPointer'></span></p>");
+			}
+			else
+			{
+				$("#viWindow").prepend(fileText);
+				$("#viWindow p:first-child").attr("id", "current_line");
+				var text = $("#viWindow p:first-child").text();
+				var slicedString = text.slice(1);
+				var firstLetter = text.slice(0,1);
+				inTheMiddle = true;
+				$("#viWindow p:first-child").html("<span class='input'><span class='before'></span><span class='selected'>"+firstLetter+"</span><span class='after'>"+slicedString+"</span></span><span id='viPointer'></span>");
+				$("#viPointer").hide();
+			}
 			var x = 0;
 			while(x < 100)
 			{
@@ -615,55 +638,67 @@
 					current = getCurrentDirectory();
 					$("#current_line").html($("#current_line").text());
 					$(".empty").remove();
-					if(vi.newFile == true)
+					console.log($("#current_line").html());
+					if(vi.filename.match(/\.exe$/))
 					{
-						if(vi.filename.match(/\.exe$/))
-						{
-							viCreateFile(vi.filename, $("#viWindow").text());
-						}
-						else
-						{
-							viCreateFile(vi.filename, $("#viWindow").html());
-						}
+						viUpdateFile(vi.filename, $("#viWindow").html(), $("#viWindow").text());
 					}
 					else
 					{
-						alert("old file");
+						viUpdateFile(vi.filename, $("#viWindow").html());
 					}
 					viUnload();
 					break;
 				case "x":
 					current = getCurrentDirectory();
-					if(vi.newFile == true)
+					$("#current_line").html($("#current_line").text());
+					$(".empty").remove();
+					if(vi.filename.match(/\.exe$/))
 					{
-						viCreateFile(vi.filename, txt);
+						viUpdateFile(vi.filename, $("#viWindow").html(), $("#viWindow").text());
 					}
 					else
 					{
-						alert("old file");
+						viUpdateFile(vi.filename, $("#viWindow").html());
 					}
 					viUnload();
 					break;
 			}
 		}
 
-		var viCreateFile = function(filename, txt)
+		var viUpdateFile = function(filename, txt, func)
 		{
 			current = getCurrentDirectory();
 			if(filename.match(/\.exe$/))
 			{
-				var adder = new Function(txt);
+				var adder = new Function(func);
 				 
-				// console.log(func);
-				current._files[filename] =  {
-					execute : adder,
-				};
+				if(current._files[filename])
+				{
+					current._files[filename].execute = adder;
+					current._files[filename].contents = txt;
+				}
+				else
+				{
+					current._files[filename] =  {
+						execute : adder,
+						contents : txt,
+					};
+				}
 			}
 			else
 			{
-				current._files[filename] =  {
-					contents : txt,
-				};
+				if(current._files[filename])
+				{
+					current._files[filename].contents = txt;
+				}
+				else
+				{
+					current._files[filename] =  {
+						contents : txt,
+					};
+				}			
+
 			}
 		}
 		var viInsertKeyDown = function(e)

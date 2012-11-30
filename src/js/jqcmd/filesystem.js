@@ -31,7 +31,7 @@ var filesystem = {
 		_files : {
 			"resume.txt" : {
 				about : "Resume",
-				contents : "<h1>Resume</h1><p>Work I've done: <ul><li>one</li><li>two</li></ul>",
+				contents : "<p>Resume</p><p>Work I've done: <p>one</p><p>two</p>",
 			}
 		}
 	},
