@@ -4,8 +4,8 @@ var filesystem = {
 			"me.exe" : {
 				about : "It's me!",
 				execute : function() {
-					alert('execute works');
-				}
+					alert("execute works");
+				},
 			}
 		}
 	},

@@ -17,11 +17,12 @@
 		                if(t && typeof t == "object"){
 		                    a[a.length]= '"'+p+'"' + ":{" + arguments.callee(t).join(", ") + "}";
 		                }
-		                else {		                    
+		                else {
 		                    if(typeof t == "string"){
-		                        a[a.length] = [ '"'+p+'"'+ ":\"" + t.toString() + "\"" ];
+		                        a[a.length] = [ '"'+p+'"'+ ":\"" + t.toString() + "\"" ];                 
 		                    }
 		                    else{
+		                	console.log(p);                    
 		                        a[a.length] = [ '"'+p+'"'+ ":" + t.toString()];
 		                    }		                    
 		                }
@@ -513,7 +514,8 @@
 			}
 			else
 			{
-				$("#viWindow").prepend(fileText);
+				console.log(fileText);
+				$("#viWindow").prepend(fileText.replace(/\\('|")/gi, "$1"));
 				$("#viWindow p:first-child").attr("id", "current_line");
 				var text = $("#viWindow p:first-child").text();
 				var slicedString = text.slice(1);
@@ -672,17 +674,19 @@
 			if(filename.match(/\.exe$/))
 			{
 				var adder = new Function(func);
+				parsedTxt = txt.replace(/("|'")/gi, "\\\\\\$1");
+				console.log(parsedTxt);
 				 
 				if(current._files[filename])
 				{
 					current._files[filename].execute = adder;
-					current._files[filename].contents = txt;
+					current._files[filename].contents = parsedTxt;
 				}
 				else
 				{
 					current._files[filename] =  {
 						execute : adder,
-						contents : txt,
+						contents : parsedTxt,
 					};
 				}
 			}
@@ -690,12 +694,12 @@
 			{
 				if(current._files[filename])
 				{
-					current._files[filename].contents = txt;
+					current._files[filename].contents = parsedTxt;
 				}
 				else
 				{
 					current._files[filename] =  {
-						contents : txt,
+						contents : parsedTxt,
 					};
 				}			
 
