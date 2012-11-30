@@ -111,6 +111,10 @@
 	width: 100px;
 	display: inline-block;
 }
+.jqcmd .ls_list {
+	display: inline-block;
+	margin-right: 20px;
+}
 
 /* VI DISPLAY */
 #viInput {

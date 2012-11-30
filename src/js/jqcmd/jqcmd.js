@@ -46,6 +46,7 @@
 			file : '',
 			newFile : false,
 		}
+		tabCount = 0;
 		// Keeps track of where the user is in the file tree  
 		var directory = new Array();
 		if(typeof(Storage)!=="undefined")
@@ -208,9 +209,9 @@
 
 			for(i in current)
 			{
-				items.push(i);
+				items.push(i+"/");
 			}
-			if(current._files)
+			if(current._files && splitup[0] != "cd")
 			{
 				for(i in current._files)
 				{
@@ -243,6 +244,23 @@
 				}
 
 				$(input).text(returnText);
+			}
+			else if(found.length > 1)
+			{
+				if(tabCount == 0)
+				{
+					tabCount++;
+					return;
+				}
+				var returnText = '';
+				for(i in found)
+				{
+					returnText += "<p class='ls_list'>"+found[i]+"</p>"
+				}
+				newLine = $('#pointer').parent().clone();
+				$('#pointer').parent().after("<div class='output'>"+returnText+"</div>");
+				$('#pointer').remove();
+				$('.output:last-child').after(newLine);
 			}
 		}
 
@@ -514,7 +532,6 @@
 			}
 			else
 			{
-				console.log(fileText);
 				$("#viWindow").prepend(fileText.replace(/\\('|")/gi, "$1"));
 				$("#viWindow p:first-child").attr("id", "current_line");
 				var text = $("#viWindow p:first-child").text();
@@ -833,6 +850,10 @@
 				keycode = window.event.keyCode;
 			}else if(e) {
 				keycode = e.which;
+			}
+			if(tabCount > 0)
+			{
+				tabCount = 0;
 			}
 			// If the key isn't "enter" and the control key isn't pressed, then append the pressed key to the screen
 			if(keycode != 13 && e.ctrlKey == false)
