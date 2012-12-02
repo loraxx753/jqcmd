@@ -8,6 +8,8 @@
 }
 .jqcmd p {
 	white-space: pre;
+	min-width: 1em;
+	min-height: 1em;
 }
 .jqcmd_menu {
 	font-family: Arial,Helvetica,sans-serif;

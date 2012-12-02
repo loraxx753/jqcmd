@@ -51,6 +51,8 @@ var filesystem = {
 	},
 	_files : {
 		".ignore" : {},
-		"new.txt" : {}
+		"new.txt" : {
+			contents : "<p>Resume</p><p>Work I've done: <p>one</p><p>two</p>",
+		}
 	}
 }
