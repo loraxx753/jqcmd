@@ -43,6 +43,7 @@
 			up_arrow : 38,
 			down_arrow : 40,
 		}
+		var pointer = '';
 		var replaceText = function(beforeTxt, selectedTxt, afterTxt) {
 			if(!selectedTxt)
 			{
@@ -54,7 +55,6 @@
 			}
 			$(pointer).parent().html('<span class="before">'+beforeTxt+'</span><span class="selected">'+selectedTxt+'</span><span class="after">'+afterTxt+'</span>');
 		}
-		var pointer = '';
 		var escapeQuotes = function(txt)
 		{
 			return txt.replace(/("|')/gi, "\\$1");
@@ -105,6 +105,18 @@
 				$this.on("keydown.mainKeyDown", mainKeyDown);
 				$this.on("keypress.mainKeyPress", mainKeyPress);
 				fileTreeUpdate();
+				$('.cmd_current_line').removeClass("cmd_current_line");
+				// Replaces the text of the input 
+				$(pointer).parent().parent().html($(pointer).parent().parent().text()).after(line.clone().addClass("cmd_current_line"));
+			},
+			redrawLine : function()
+			{
+				var text = $(pointer).parent().text();
+
+				var prvTxt = text.slice(0, vi.pointerLocation);
+				var curTxt = text.slice(vi.pointerLocation, vi.pointerLocation+1);
+				var aftrTxt = text.slice(vi.pointerLocation+1);
+				$(pointer).parent().parent().html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 			},
 			navigation : function(e)
 			{
@@ -175,8 +187,9 @@
 				else
 				{
 					$pointer = $(pointer);
+					inputText = $pointer.parent().text();
 					navigation(e, true, function() {
-						if(e.which == 8 && $pointer.parent().text() == '')
+						if(e.which == key.backspace && inputText == '')
 						{
 							$("#viInput").html('');
 							vi.command = false;
@@ -207,10 +220,74 @@
 				var keyTxt = String.fromCharCode(keycode);
 				if(!vi.command)
 				{
-					console.log(keyTxt);
 					if(keyTxt == "a")
 					{
 						$("#viInput").html("-- INSERT --");
+						var input = $pointer.parent().children(".after").text();
+						var slicedString = input.slice(1);
+						var firstLetter = input.slice(0, 1);
+						$pointer.parent().children(".before").text($pointer.parent().children(".before").text()+$pointer.parent().children(".selected").text());
+						$pointer.parent().children(".selected").text(firstLetter);
+						$pointer.parent().children(".after").text(slicedString);
+						if($pointer.parent().children(".after").html() != '')
+						{
+							vi.pointerLocation++;
+						}
+						else if($pointer.html() != '')
+						{
+							vi.pointerLocation++;
+						}
+
+
+						$this.off("keypress.viKeyPress");
+						$this.off("keydown.viKeyDown");
+						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
+						$this.on("keydown.viInsertKeyDown", vi.insertKeyDown);
+					}
+					else if(keyTxt == "i")
+					{
+						$("#viInput").html("-- INSERT --");
+
+						$this.off("keypress.viKeyPress");
+						$this.off("keydown.viKeyDown");
+						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
+						$this.on("keydown.viInsertKeyDown", vi.insertKeyDown);
+					}
+					else if(keyTxt == "I")
+					{
+						vi.pointerLocation =0;
+						$("#viInput").html("-- INSERT --");
+						vi.redrawLine();
+						$this.off("keypress.viKeyPress");
+						$this.off("keydown.viKeyDown");
+						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
+						$this.on("keydown.viInsertKeyDown", vi.insertKeyDown);
+					}
+					else if(keyTxt == "A")
+					{
+						vi.pointerLocation = $(pointer).parent().text().length;
+						$("#viInput").html("-- INSERT --");
+						vi.redrawLine();
+						$this.off("keypress.viKeyPress");
+						$this.off("keydown.viKeyDown");
+						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
+						$this.on("keydown.viInsertKeyDown", vi.insertKeyDown);
+					}
+					else if(keyTxt == "o")
+					{
+						$(pointer).parent().parent().html($(pointer).parent().parent().text()).after("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span></span></p>");
+						$("#viInput").html("-- INSERT --");
+
+						$this.off("keypress.viKeyPress");
+						$this.off("keydown.viKeyDown");
+						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
+						$this.on("keydown.viInsertKeyDown", vi.insertKeyDown);
+					}
+					else if(keyTxt == "O")
+					{
+						$(pointer).parent().parent().html($(pointer).parent().parent().text()).before("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span></span></p>");
+						$("#viInput").html("-- INSERT --");
+
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
 						$this.on("keypress.viInsertKeyPress", vi.insertKeyPress);
@@ -219,7 +296,7 @@
 					else if(keycode == key.colon) //colon
 					{
 						$("#current_line .input").html($("#current_line .input").text());
-						$("#viInput").html("<span>:</span><span id='commandPointer' class='blinker'></span>");
+						$("#viInput").html("<span>:</span><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span>");
 						$("#viPointer").hide();
 						if($("#viPointer").prev().text() == '')
 						{
@@ -313,8 +390,11 @@
 						var aftrTxt = $curLine.text().slice(vi.pointerLocation+1);
 						$curLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 					}
-					else if(keyTxt == "w" && (vi.pointerLocation != $("#current_line").text().length || !$("#current_line").next().hasClass("empty"))) //beginning of the next word
+					else if(keyTxt == "w") //beginning of the next word
 					{
+						if(!$("#current_line").next().hasClass("empty") || $("#current_line").find(".after").html() != '')
+						{
+						console.log($("#current_line").next().html());
 						var location = $pointer.next().text().indexOf(' ');
 						vi.pointerLocation += location;
 						$line = $pointer.parent().parent();
@@ -322,7 +402,7 @@
 						{
 							vi.pointerLocation += 2;
 						}
-						else if(vi.pointerLocation != $("#current_line").text().length-1)
+						else if(vi.pointerLocation != $("#current_line").text().length-2)
 						{
 							vi.pointerLocation = $("#current_line").text().length-1;
 						}
@@ -336,10 +416,11 @@
 						var curTxt  = $line.text().slice(vi.pointerLocation, vi.pointerLocation+1);
 						var aftrTxt = $line.text().slice(vi.pointerLocation+1);
 						$line.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');							
+
+						}
 					}
 					else if(keyTxt == "b" && (vi.pointerLocation != 0 || $('#current_line').prev().html() != null)) //beginning of the preceding word
 					{
-						console.log($('#current_line').prev().html());
 						var cur = $("#current_line");
 						if(vi.pointerLocation == 0)
 						{
@@ -381,18 +462,11 @@
 					if(keycode != key.enter && e.ctrlKey == false)
 					{
 						var keyTxt = String.fromCharCode(keycode);
-						if(inTheMiddle)
-						{
-							$pointer.prev().children(".before").append(keyTxt);
-						}
-						else
-						{
-							$("#commandPointer").prev().append(keyTxt);
-						}
+						$pointer.parent().children(".before").append(keyTxt);
 					}
 					else
 					{
-						var commandInput = $pointer.prev().text().slice(1);
+						var commandInput = $pointer.parent().text();
 						vi.processInput(commandInput);
 					}
 				}
@@ -408,7 +482,6 @@
 
 				if(keycode == key.escape) //escape key
 				{
-					$("#current_line .input").html($("#current_line .input").text());
 
 					$this.off("keypress.viInsertKeyPress");
 					$this.off("keydown.viInsertKeyDown");
@@ -481,6 +554,24 @@
 						}
 						vi.unload();
 						break;
+					case "w":
+					{
+						current = getCurrentDirectory();
+						var $viClone = $("#viWindow").clone();
+						$viClone.find("#current_line").html($viClone.find("#current_line").text());
+						$viClone.find(".empty").remove();
+						if(vi.filename.match(/\.exe$/))
+						{
+							vi.updateFile(vi.filename, $viClone.html(), $viClone.text());
+						}
+						else
+						{
+							alert(vi.filename);
+							vi.updateFile(vi.filename, $viClone.html());
+						}
+						alert($viClone.text());
+						break;
+					}
 					case "x":
 						current = getCurrentDirectory();
 						$("#current_line").html($("#current_line").text());
@@ -1078,7 +1169,7 @@
 				// Run the function and get the input
 				var output = run($(pointer).parent().text());
 				//clone a new line
-				newLine = line.clone();
+				newLine = line.clone().addClass("cmd_current_line");
 				// if the output doesn't clear the console
 				if(output != "clearConsole")
 				{
@@ -1095,7 +1186,7 @@
 					// If there is output then print it to the screen.	
 					if(output != undefined)
 					{
-						$parent = $(pointer).parent();
+						$parent = $(pointer).parent().parent().removeClass("cmd_current_line");
 						$(pointer).remove();
 						$parent.after("<div class='output'>"+output+"</div>");
 						$('.output:last-child').after(newLine);					
@@ -1122,7 +1213,8 @@
 			$this.append('<div class="jqcmd_window">'+settings.loadScreen+'<p id="first"><span class="static">'+settings.hostname+'</span> > <span class="input"><span class="before"></span><span class="selected"></span><span class="after"></span></span></p></div>');
 			var position = $this.offset();
 			// Clone the first line to use for later
-			line = $this.find('#first').clone();
+			line = $this.find('#first').clone().removeAttr("id");
+			$this.find('#first').addClass("cmd_current_line");
 			$this.children('.jqcmd_menu').click(function(e) {
 				e.preventDefault();
 				var preparedString = objectToString(settings.fileSystem);
@@ -1131,7 +1223,6 @@
 				window.focus();
 				other.document.write(preparedString);
 			});
-
 			$this.on("keydown.mainKeyDown", mainKeyDown);
 			$this.on("keypress.mainKeyPress", mainKeyPress);
 			pointer = ".selected:visible";
