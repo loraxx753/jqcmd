@@ -207,6 +207,7 @@
 				var keyTxt = String.fromCharCode(keycode);
 				if(!vi.command)
 				{
+					console.log(keyTxt);
 					if(keyTxt == "a")
 					{
 						$("#viInput").html("-- INSERT --");
@@ -226,7 +227,7 @@
 						}
 						vi.command = true;
 					}
-					else if(keyTxt == "h") 
+					else if(keyTxt == "h") //left a character
 					{
 						var input = $pointer.parent().children(".before").text();
 						if(input.length > 0)
@@ -253,7 +254,7 @@
 							vi.pointerLocation = 0;
 						}
 					}
-					else if(keyTxt == "l") 
+					else if(keyTxt == "l") //right a character
 					{
 						var input = $pointer.parent().children(".after").text();
 						var slicedString = input.slice(1);
@@ -293,6 +294,85 @@
 							$nextLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 							$("#current_line").html($("#current_line").text()).removeAttr("id").next().attr("id", "current_line");
 						}
+					}
+					else if(keyTxt == "0") // beginning of the line
+					{
+						vi.pointerLocation = 0;
+						$curLine = $pointer.parent().parent();
+						var prvTxt = $curLine.text().slice(0, vi.pointerLocation);
+						var curTxt = $curLine.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+						var aftrTxt = $curLine.text().slice(vi.pointerLocation+1);
+						$curLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
+					}
+					else if(keyTxt == "$") //end of the line
+					{
+						vi.pointerLocation = $pointer.parent().text().length - 1;
+						$curLine = $pointer.parent().parent();
+						var prvTxt = $curLine.text().slice(0, vi.pointerLocation);
+						var curTxt = $curLine.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+						var aftrTxt = $curLine.text().slice(vi.pointerLocation+1);
+						$curLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
+					}
+					else if(keyTxt == "w" && (vi.pointerLocation != $("#current_line").text().length || !$("#current_line").next().hasClass("empty"))) //beginning of the next word
+					{
+						var location = $pointer.next().text().indexOf(' ');
+						vi.pointerLocation += location;
+						$line = $pointer.parent().parent();
+						if(location >= 0)
+						{
+							vi.pointerLocation += 2;
+						}
+						else if(vi.pointerLocation != $("#current_line").text().length-1)
+						{
+							vi.pointerLocation = $("#current_line").text().length-1;
+						}
+						else
+						{
+							vi.pointerLocation = 0;
+							$line = $pointer.parent().parent().next();
+							$("#current_line").html($("#current_line").text()).removeAttr("id").next().attr("id", "current_line");
+						}
+						var prvTxt  = $line.text().slice(0, vi.pointerLocation);
+						var curTxt  = $line.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+						var aftrTxt = $line.text().slice(vi.pointerLocation+1);
+						$line.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');							
+					}
+					else if(keyTxt == "b" && (vi.pointerLocation != 0 || $('#current_line').prev().html() != null)) //beginning of the preceding word
+					{
+						console.log($('#current_line').prev().html());
+						var cur = $("#current_line");
+						if(vi.pointerLocation == 0)
+						{
+							$prevLine = $pointer.parent().parent().prev();
+							if($pointer.parent().parent().prev().html() != null)
+							{
+								var location = $prevLine.text().length;
+								var prvTxt = $prevLine.text().slice(0, vi.pointerLocation);
+								var curTxt = $prevLine.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+								var aftrTxt = $prevLine.text().slice(vi.pointerLocation+1);
+								$prevLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
+							}
+							$("#current_line").html($("#current_line").text()).removeAttr("id").prev().attr("id", "current_line");
+						}
+						else
+						{
+							var location = $pointer.prev().text().lastIndexOf(' ', vi.pointerLocation-2);
+						}
+						$pointer = $(pointer);
+						vi.pointerLocation = location;
+						$line = $pointer.parent().parent();
+						if(location >= 0)
+						{
+							vi.pointerLocation ++;
+						}
+						else
+						{
+							vi.pointerLocation = 0;
+						}
+						var prvTxt = $line.text().slice(0, vi.pointerLocation);
+						var curTxt = $line.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+						var aftrTxt = $line.text().slice(vi.pointerLocation+1);
+						$line.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 					}
 				}
 				else
