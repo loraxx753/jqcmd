@@ -20,21 +20,17 @@ $(document).ready(function() {
 	loadText = "<p>Welcome to the jqcmd example file.</p>";
 	if(!localStorage.lastLogin)
 	{
-		loadText += "<p>You've never logged in before!</p>";		
+		var d=new Date();
+		var n=d.toLocaleDateString();
+		n += " "+d.toLocaleTimeString();
+		localStorage.lastLogin = n;
 	}
-	else
-	{
-		loadText += "</p><p>Last login "+localStorage.lastLogin+".</p>";
-	}
+	loadText += "<p>Last login "+localStorage.lastLogin+".</p>";
 	$("body").jqcmd({
 		loadScreen : loadText,
 		hostname : "jqcmd.example",
     	fileSystem : filesystem,
 	});
-	var d=new Date();
-	var n=d.toLocaleDateString();
-	n += " "+d.toLocaleTimeString();
-	localStorage.lastLogin = n;
 });
 </script>
 </head>

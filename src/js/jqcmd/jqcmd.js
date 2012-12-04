@@ -490,29 +490,46 @@
 					
 					$("#viInput").html("");
 				}
-				if(e.which == key.backspace) 
-				{
-					e.preventDefault();
-					if(vi.pointerLocation == 0)
+				vi.navigation(e);
+				navigation(e, true, function () {
+					if(e.which == key.backspace) 
 					{
-						var letter = $("#current_line").text().slice(0,1);
-						var text = $("#current_line").text().slice(1);
-						$prev = $("#current_line").prev();
-						if($prev.html() !== null)
+						e.preventDefault();
+						if(vi.pointerLocation == 0)
 						{
-							$("#current_line").remove()
-							$prev.attr("id", "current_line");
-							vi.pointerLocation = $prev.text().length;
-							$prev.html("<span class='input'><span class='before'>"+$prev.text()+"</span><span class='selected'>"+letter+"</span><span class='after'>"+text+"</span></span>");
+							var letter = $("#current_line").text().slice(0,1);
+							var text = $("#current_line").text().slice(1);
+							$prev = $("#current_line").prev();
+							if($prev.html() !== null)
+							{
+								$("#current_line").remove()
+								$prev.attr("id", "current_line");
+								vi.pointerLocation = $prev.text().length;
+								var prevText = $prev.text();
+								$prev.html("<span class='input'><span class='before'>"+prevText+"</span><span class='selected'>"+letter+"</span><span class='after'>"+text+"</span></span>");
+							}
+						}
+						else if(vi.pointerLocation > 0)
+						{
+							vi.pointerLocation--;
 						}
 					}
-					else if(vi.pointerLocation > 0)
+					if(e.which == key.delete && vi.pointerLocation >= $(pointer).parent().text().length)
 					{
-						vi.pointerLocation--;
+								console.log("jere");
+							$nxt = $("#current_line").next();
+							if(!$nxt.hasClass("empty"))
+							{
+								console.log("jere");
+								var letter = $nxt.text().slice(0,1);
+								var text = $nxt.text().slice(1);
+								$("#current_line").find(".after").html(text);
+								$("#current_line").find(".selected").html(letter);
+								$nxt.remove();
+							}
 					}
-				}
-				vi.navigation(e);
-				navigation(e, true);
+
+				});
 			},
 
 			insertKeyPress : function(e)
@@ -538,6 +555,7 @@
 					$("#current_line").find('.after').text('');
 					$("#current_line").find('.selected').text('');
 					$("#current_line").html($("#current_line").text()).removeAttr("id").after("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'>"+curTxt+"</span><span class='after'>"+afterTxt+"</span></span></p>");
+					vi.pointerLocation = 0;
 				}
 			},
 			throwError : function(errorTxt)
@@ -565,8 +583,6 @@
 						var $cl = $cloned.find("#current_line");
 						$cl.html($cl.text()).removeAttr("id");
 						$cloned.find(".empty").remove();
-						console.log($cloned.html());
-						console.log(vi.original);
 						if($cloned.html() != vi.original)
 						{
 							vi.throwError("E37: No write since last change (add ! to override)");
