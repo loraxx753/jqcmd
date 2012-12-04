@@ -112,12 +112,12 @@
 			},
 			redrawLine : function()
 			{
-				var text = $(pointer).parent().text();
+				var text = $("#current_line").text();
 
 				var prvTxt = text.slice(0, vi.pointerLocation);
 				var curTxt = text.slice(vi.pointerLocation, vi.pointerLocation+1);
 				var aftrTxt = text.slice(vi.pointerLocation+1);
-				$(pointer).parent().parent().html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
+				$("#current_line").html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 			},
 			navigation : function(e)
 			{
@@ -468,6 +468,7 @@
 					{
 						var commandInput = $pointer.parent().text();
 						vi.processInput(commandInput);
+						vi.command = false;
 					}
 				}
 			},
@@ -618,10 +619,8 @@
 						}
 						else
 						{
-							alert(vi.filename);
 							vi.updateFile(vi.filename, $viClone.html());
 						}
-						alert($viClone.text());
 						break;
 					}
 					case "x":
@@ -638,7 +637,15 @@
 						}
 						vi.unload();
 						break;
+					case "0":
+						vi.pointerLocation = 0;
+						$("#current_line").html($("#current_line").text()).removeAttr("id");
+						$("#viWindow p:first-child").attr("id", "current_line");
+						vi.redrawLine();
+						break;
 				}
+				if(command.match(/[0-9]+/))
+				$("#viInput").html($("#viInput").text());
 			},
 
 			updateFile : function(filename, txt, func)
