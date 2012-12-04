@@ -142,3 +142,6 @@
 #viWindow .current_line {
 	margin: 0;
 }
+#viInput .inputError {
+	background: #F00;
+}

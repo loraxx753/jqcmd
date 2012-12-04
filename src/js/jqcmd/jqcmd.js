@@ -69,8 +69,9 @@
 			file : '',
 			newFile : false,
 			pointerLocation : 0,
+			original : '',
 			load : function(fileText, newFile) {
-				
+				vi.original = fileText;
 				$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
 				var docHeight = $(window).height();
 				if(fileText == '')
@@ -394,28 +395,27 @@
 					{
 						if(!$("#current_line").next().hasClass("empty") || $("#current_line").find(".after").html() != '')
 						{
-						console.log($("#current_line").next().html());
-						var location = $pointer.next().text().indexOf(' ');
-						vi.pointerLocation += location;
-						$line = $pointer.parent().parent();
-						if(location >= 0)
-						{
-							vi.pointerLocation += 2;
-						}
-						else if(vi.pointerLocation != $("#current_line").text().length-2)
-						{
-							vi.pointerLocation = $("#current_line").text().length-1;
-						}
-						else
-						{
-							vi.pointerLocation = 0;
-							$line = $pointer.parent().parent().next();
-							$("#current_line").html($("#current_line").text()).removeAttr("id").next().attr("id", "current_line");
-						}
-						var prvTxt  = $line.text().slice(0, vi.pointerLocation);
-						var curTxt  = $line.text().slice(vi.pointerLocation, vi.pointerLocation+1);
-						var aftrTxt = $line.text().slice(vi.pointerLocation+1);
-						$line.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');							
+							var location = $pointer.next().text().indexOf(' ');
+							vi.pointerLocation += location;
+							$line = $pointer.parent().parent();
+							if(location >= 0)
+							{
+								vi.pointerLocation += 2;
+							}
+							else if(vi.pointerLocation != $("#current_line").text().length-2)
+							{
+								vi.pointerLocation = $("#current_line").text().length-1;
+							}
+							else
+							{
+								vi.pointerLocation = 0;
+								$line = $pointer.parent().parent().next();
+								$("#current_line").html($("#current_line").text()).removeAttr("id").next().attr("id", "current_line");
+							}
+							var prvTxt  = $line.text().slice(0, vi.pointerLocation);
+							var curTxt  = $line.text().slice(vi.pointerLocation, vi.pointerLocation+1);
+							var aftrTxt = $line.text().slice(vi.pointerLocation+1);
+							$line.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');							
 
 						}
 					}
@@ -493,7 +493,23 @@
 				if(e.which == key.backspace) 
 				{
 					e.preventDefault();
-					vi.pointerLocation--;
+					if(vi.pointerLocation == 0)
+					{
+						var letter = $("#current_line").text().slice(0,1);
+						var text = $("#current_line").text().slice(1);
+						$prev = $("#current_line").prev();
+						if($prev.html() !== null)
+						{
+							$("#current_line").remove()
+							$prev.attr("id", "current_line");
+							vi.pointerLocation = $prev.text().length;
+							$prev.html("<span class='input'><span class='before'>"+$prev.text()+"</span><span class='selected'>"+letter+"</span><span class='after'>"+text+"</span></span>");
+						}
+					}
+					else if(vi.pointerLocation > 0)
+					{
+						vi.pointerLocation--;
+					}
 				}
 				vi.navigation(e);
 				navigation(e, true);
@@ -524,6 +540,10 @@
 					$("#current_line").html($("#current_line").text()).removeAttr("id").after("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'>"+curTxt+"</span><span class='after'>"+afterTxt+"</span></span></p>");
 				}
 			},
+			throwError : function(errorTxt)
+			{
+				$("#viInput").html("<span class='inputError'>"+errorTxt+"</span>");
+			},
 			contentPresent : function()
 			{
 				var text = $("#current_line").text();
@@ -539,6 +559,22 @@
 				{
 					case "q!":
 						vi.unload();
+						break;
+					case "q":
+						$cloned = $("#viWindow").clone();
+						var $cl = $cloned.find("#current_line");
+						$cl.html($cl.text()).removeAttr("id");
+						$cloned.find(".empty").remove();
+						console.log($cloned.html());
+						console.log(vi.original);
+						if($cloned.html() != vi.original)
+						{
+							vi.throwError("E37: No write since last change (add ! to override)");
+						}
+						else
+						{
+							vi.unload();
+						}
 						break;
 					case "wq":
 						current = getCurrentDirectory();
