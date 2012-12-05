@@ -70,9 +70,11 @@
 			newFile : false,
 			pointerLocation : 0,
 			original : '',
+			filename : '',
+			fileMemory : new Array(),
 			load : function(fileText, newFile) {
 				vi.original = fileText;
-				$(".jqcmd_window").hide().after("<div id='viWindow'></div><p id='viInput'></p>");
+				$(".jqcmd_window").hide().after("<div id='viWindow'></div><ul id='bottomBar'><li id='viInput'></li><li id='linenum'>4,11</li><li>All</li></ul>");
 				var docHeight = $(window).height();
 				if(fileText == '')
 				{
@@ -84,12 +86,25 @@
 					$("#viWindow p:first-child").attr("id", "current_line");
 					vi.contentPresent();
 				}
+				if(newFile)
+				{
+					var fileOpenTxt = '"'+vi.filename+'" [New File]';
+				}
+				else
+				{
+					var lines = $("#viWindow p").length;
+					var characters = $("#viWindow").text().length + lines;
+					var fileOpenTxt = '"'+vi.filename+'" '+lines+'L, '+characters+'C';
+				}
+				$("#viInput").html(fileOpenTxt);
 				var x = 0;
 				while(x < 100)
 				{
 					$("#viWindow").append("<p class='empty'>~</p>");
 					x++;
 				}
+				vi.pointerDisplay();
+				vi.fileMemory.push($("#viWindow").html());
 				$this.off("keydown.mainKeyDown");
 				$this.off("keypress.mainKeyPress");
 
@@ -97,6 +112,7 @@
 				$this.on("keypress.viKeyPress", vi.cmdKeyPress);
 			},
 			unload : function() {
+				vi.fileMemory = new Array();
 				vi.command = false;
 				$("#viWindow").remove();
 				$("#viInput").remove();
@@ -109,6 +125,12 @@
 				$('.cmd_current_line').removeClass("cmd_current_line");
 				// Replaces the text of the input 
 				$(pointer).parent().parent().html($(pointer).parent().parent().text()).after(line.clone().addClass("cmd_current_line"));
+			},
+			pointerDisplay : function()
+			{
+				var line = $("#current_line").index()+1;
+				var cursor = vi.pointerLocation+1;
+				$("#linenum").html(line+","+cursor);
 			},
 			redrawLine : function()
 			{
@@ -209,6 +231,7 @@
 						}
 					});		
 				}
+				vi.pointerDisplay();
 			},
 			cmdKeyPress : function(e)
 			{
@@ -391,6 +414,10 @@
 						var aftrTxt = $curLine.text().slice(vi.pointerLocation+1);
 						$curLine.html('<span class="input"><span class="before">'+prvTxt+'</span><span class="selected">'+curTxt+'</span><span class="after">'+aftrTxt+'</span></span>');
 					}
+					else if(keyTxt == "u")
+					{
+						$("#viWindow").html(vi.fileMemory.pop());
+					}
 					else if(keyTxt == "w") //beginning of the next word
 					{
 						if(!$("#current_line").next().hasClass("empty") || $("#current_line").find(".after").html() != '')
@@ -531,6 +558,7 @@
 					}
 
 				});
+				vi.pointerDisplay();
 			},
 
 			insertKeyPress : function(e)
@@ -610,6 +638,7 @@
 					case "w":
 					{
 						current = getCurrentDirectory();
+						vi.fileMemory.push($("#viWindow").html());
 						var $viClone = $("#viWindow").clone();
 						$viClone.find("#current_line").html($viClone.find("#current_line").text());
 						$viClone.find(".empty").remove();
@@ -621,6 +650,7 @@
 						{
 							vi.updateFile(vi.filename, $viClone.html());
 						}
+						vi.redrawLine();
 						break;
 					}
 					case "x":
@@ -643,8 +673,28 @@
 						$("#viWindow p:first-child").attr("id", "current_line");
 						vi.redrawLine();
 						break;
+					case "$":
+						vi.pointerLocation = 0;
+						$("#current_line").html($("#current_line").text()).removeAttr("id");
+						$("#viWindow p:not(.empty):last").attr("id", "current_line");
+						vi.redrawLine();							
+						break;
+					default:
+					if(num = command.match(/^[0-9]+$/))
+					{
+						vi.pointerLocation = 0;
+						$("#current_line").html($("#current_line").text()).removeAttr("id");
+						if(!$("#viWindow p:nth-child("+num[0]+")").hasClass("empty"))
+						{
+							$("#viWindow p:nth-child("+num[0]+")").attr("id", "current_line");
+						}
+						else
+						{
+							$("#viWindow p:not(.empty):last").attr("id", "current_line");
+						}
+						vi.redrawLine();							
+					}
 				}
-				if(command.match(/[0-9]+/))
 				$("#viInput").html($("#viInput").text());
 			},
 
