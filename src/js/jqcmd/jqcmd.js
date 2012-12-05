@@ -86,7 +86,7 @@
 					$("#viWindow p:first-child").attr("id", "current_line");
 					vi.contentPresent();
 				}
-				if(newFile)
+				if(vi.newFile)
 				{
 					var fileOpenTxt = '"'+vi.filename+'" [New File]';
 				}
