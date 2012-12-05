@@ -246,7 +246,7 @@
 				{
 					if(keyTxt == "a")
 					{
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 						var input = $pointer.parent().children(".after").text();
 						var slicedString = input.slice(1);
 						var firstLetter = input.slice(0, 1);
@@ -270,7 +270,7 @@
 					}
 					else if(keyTxt == "i")
 					{
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
@@ -280,7 +280,7 @@
 					else if(keyTxt == "I")
 					{
 						vi.pointerLocation =0;
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 						vi.redrawLine();
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
@@ -290,7 +290,7 @@
 					else if(keyTxt == "A")
 					{
 						vi.pointerLocation = $(pointer).parent().text().length;
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 						vi.redrawLine();
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
@@ -300,7 +300,7 @@
 					else if(keyTxt == "o")
 					{
 						$(pointer).parent().parent().html($(pointer).parent().parent().text()).after("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span></span></p>");
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
@@ -310,7 +310,7 @@
 					else if(keyTxt == "O")
 					{
 						$(pointer).parent().parent().html($(pointer).parent().parent().text()).before("<p id='current_line'><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span></span></p>");
-						$("#viInput").html("-- INSERT --");
+						$("#viInput").removeClass("inputError").html("-- INSERT --");
 
 						$this.off("keypress.viKeyPress");
 						$this.off("keydown.viKeyDown");
@@ -320,7 +320,7 @@
 					else if(keycode == key.colon) //colon
 					{
 						$("#current_line .input").html($("#current_line .input").text());
-						$("#viInput").html("<span>:</span><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span>");
+						$("#viInput").removeClass("inputError").html("<span>:</span><span class='input'><span class='before'></span><span class='selected'></span><span class='after'></span>");
 						$("#viPointer").hide();
 						if($("#viPointer").prev().text() == '')
 						{
@@ -589,7 +589,7 @@
 			},
 			throwError : function(errorTxt)
 			{
-				$("#viInput").html("<span class='inputError'>"+errorTxt+"</span>");
+				$("#viInput").addClass("inputError").html(errorTxt);
 			},
 			contentPresent : function()
 			{
@@ -650,7 +650,6 @@
 						{
 							vi.updateFile(vi.filename, $viClone.html());
 						}
-						vi.redrawLine();
 						break;
 					}
 					case "x":
@@ -694,7 +693,12 @@
 						}
 						vi.redrawLine();							
 					}
+					else
+					{
+						vi.throwError("E492: Not an editor command: "+command);
+					}
 				}
+				vi.redrawLine();
 				$("#viInput").html($("#viInput").text());
 			},
 

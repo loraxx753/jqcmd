@@ -154,6 +154,6 @@
 #viWindow .current_line {
 	margin: 0;
 }
-#bottomBar #viInput .inputError {
+#bottomBar #viInput.inputError {
 	background: #F00;
 }
