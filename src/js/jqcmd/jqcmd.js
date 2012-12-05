@@ -115,7 +115,7 @@
 				vi.fileMemory = new Array();
 				vi.command = false;
 				$("#viWindow").remove();
-				$("#viInput").remove();
+				$("#bottomBar").remove();
 				$(".jqcmd_window").show();
 				$this.off("keydown.viKeyDown");
 				$this.off("keypress.viKeyPress");
