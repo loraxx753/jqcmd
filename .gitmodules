@@ -1,0 +1,3 @@
+[submodule "src/jqvi"]
+	path = src/jqvi
+	url = https://github.com/loraxx753/jqvi.git

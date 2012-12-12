@@ -30,6 +30,9 @@
 	-moz-border-radius-topleft: 5px;
 	border-top-left-radius: 5px;
 }
+.jqcmd_window {
+	outline : none;
+}
 .jqcmd_menu ul {
 	margin: 0;
 	padding: 0;
