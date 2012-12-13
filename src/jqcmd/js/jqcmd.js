@@ -157,12 +157,25 @@
 				command = params.command;
 				try
 				{
-					return functions[command].execute(params);
+					for(i in params.longform)
+					{
+						functions[command].options[params.longform[i]] = 1;
+					}
+					for(i in params.shortform)
+					{
+						functions[command].options[functions[command].shortcodes[params.shortform[i]]] = 1;
+					}
+					var result = functions[command].execute(params);
+					for(i in functions[command].options)
+					{
+						functions[command].options[i] = 0;
+					}
+					return result;
 				}
 				catch(err)
 				{
 					parts = call.split(" ");
-					window.customerr = err;
+					console.log(err.message);
 					return "-bash: "+command+": command not found";
 				}
 
@@ -178,6 +191,16 @@
 			params = {};
 			parts = str.split(" ");
 			
+			found = str.match(/\-\-([a-z]+)/gi);
+			
+			params.longform = new Array();
+			for(i in found)
+			{
+				params.longform.push(found[i].substr(2));
+			}
+
+			str = str.replace(/[\s]*\-\-[a-z]+[\s]*/gi, "");
+
 			var found = str.match(/\-([a-z]+)/gi);
 			params.shortform = new Array();
 			for(i in found)
@@ -186,6 +209,7 @@
 				var split = found[i].split("");
 				params.shortform = params.shortform.concat(split);
 			}
+
 
 			str = str.replace(/[\s]*\-[a-z]+[\s]*/gi, "");
 
@@ -197,9 +221,8 @@
 			{
 				params.target = sections.pop();
 			}
-
+			console.log(params);
 			return params;
-
 		}
 		/**
 		 * Tab autocomplete functinolity
@@ -312,7 +335,60 @@
 			},
 
 			ls : {
+				options : {
+					"all" : 0,
+					"almost-all" : 0,
+					"author" : 0,
+					"escape" : 0,
+					"blocksize" : 0, //options
+					"ignore-backups" : 0,
+					"color" : 0, //optional options
+					"long" : 0,
+					"directory" : 0,
+					"dired" : 0,
+					"classify" : 0,
+					"file-type" : 0,
+					"format" : 0, //options
+					"full-time" : 0,
+					"group-directories-first" : 0,
+					"no-group" : 0,
+					"human-readable" : 0,
+					"si" : 0,
+					"dereference-command-line" : 0,
+					"dereference-command-line-symlink-to-dir" : 0,
+					"hide" : 0, //options
+					"indicator-style" : 0,
+					"inode" : 0,
+					"ignore" : 0, //options
+					"dereference" : 0,
+					"numeric-uid-gid" : 0,
+					"literal" : 0,
+					"indicator-style" : 0, //options
+					"hide-control-chars" : 0,
+					"show-control-chars" : 0,
+					"quote-name" : 0,
+					"quoting-style" : 0, //options
+					"reverse" : 0,
+					"recursive" : 0,
+					"size" : 0,
+					"sort" : 0, //options
+					"time" : 0, //options
+					"time-style" : 0, //options
+					"tabsize" : 0, //options
+					"width" : 0, //options
+					"context" : 0,
+					"help" : 0,
+					"version" : 0, //options
+
+				},
+				shortcodes : {
+					"a" : "all",
+					"l" : "long",
+					"A" : "almost-all",
+				},
 				execute : function(params) {
+					var options = functions.ls.options;
+					console.log(options);
 					var output = "<ul>";
 					var current = getCurrentDirectory();
 					if(current.location != null) 
@@ -338,7 +414,7 @@
 						{
 							for(i in current._files)
 							{
-								if(i.substring(0,1) != "." || $.inArray("a", params.shortform) >= 0)
+								if(i.substring(0,1) != "." || options['all'])
 								{
 									output += "<li>"+i+"</li>";
 								}
