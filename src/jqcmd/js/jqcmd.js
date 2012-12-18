@@ -221,7 +221,7 @@
 			{
 				params.target = sections.pop();
 			}
-			console.log(params);
+			// console.log(params);
 			return params;
 		}
 		/**
@@ -236,6 +236,7 @@
 				splitup = new Array(input);
 			}
 			var directories = splitup.pop();
+
 			var directoryTest = directories.split("/");
 			if(directoryTest.length == 0)
 			{
@@ -246,21 +247,15 @@
 				directories = directories.split("/");
 				var search = directories.pop();
 			}
-			var current = getCurrentDirectory();
+			var current = parseFolderText(directories);
 
-			for(i in directories)
-			{
-				current = current[directories[i]];
-			}
+
 			var items = new Array();
 			var found = new Array();
 
-			for(i in current)
+			for(i in current._folders)
 			{
-				if(i != "_files")
-				{
-					items.push(i+"/");
-				}
+				items.push(i+"/");
 			}
 			if(current._files && splitup[0] != "cd")
 			{
@@ -287,11 +282,6 @@
 				else
 				{
 					var returnText = splitup.join(" ")+" "+found[0];
-				}
-
-				if(current[found[0]])
-				{
-					returnText += "/";
 				}
 
 				replaceText(returnText);
@@ -388,37 +378,18 @@
 				},
 				execute : function(params) {
 					var options = functions.ls.options;
-					console.log(options);
+					// console.log(options);
 					var output = "<ul>";
 					var current = getCurrentDirectory();
-					if(current.location != null) 
+					for(i in current._folders)
 					{
-						for(i in current)
-						{
-							if(i != "_files")
-							{
-								output += "<li>"+current[i]+"</li>";
-							}
-						}
+						output += "<li>"+i+"/</li>";
 					}
-					else
+					for(i in current._files)
 					{
-						for(i in current)
+						if(i.substring(0,1) != "." || options['all'])
 						{
-							if(i != "_files")
-							{
-								output += "<li>"+i+"/</li>";
-							}
-						}
-						if(current._files)
-						{
-							for(i in current._files)
-							{
-								if(i.substring(0,1) != "." || options['all'])
-								{
-									output += "<li>"+i+"</li>";
-								}
-							}
+							output += "<li>"+i+"</li>";
 						}
 					}
 					output += "</ul>";
@@ -463,23 +434,14 @@
 						var dirs = params.target.split("/");
 						var childDir = params.target;
 						var current = getCurrentDirectory();
-						for(i in dirs)
-						{
-							if(current[dirs[i]])
-							{
-								cmd.directory.push(dirs[i]);
-								current = current[dirs[i]];
-							}
-							else if(dirs[i] == "..")
-							{
-								cmd.directory.pop();
-								current = getCurrentDirectory();
-							}
-							else
-							{
-								return "Oh no! Something went wonky!";
-							}
+						try {
+							var tempCurrent = parseFolderText(dirs, true);
 						}
+						catch(err)
+						{
+							return err;
+						}
+
 					}
 					else
 					{
@@ -491,7 +453,7 @@
 			mkdir : {
 				execute : function(params) {
 					current = getCurrentDirectory();
-					current[params.target] = {};
+					current._folders[params.target] = {};
 					fileTreeUpdate();
 				},
 				help : "Makes a directory in the file tree"
@@ -518,12 +480,14 @@
 			},
 			vi : {
 				execute : function(params) {
-					current = getCurrentDirectory();
 					var fileText;
 					var newFile;
-					if(current._files[params.target])
+					var parts = params.target.split("/");
+					var filename = parts.pop();
+					current = parseFolderText(parts);
+					if(current._files[filename])
 					{
-						fileText = current._files[params.target].contents;
+						fileText = current._files[filename].contents;
 					}
 					else
 					{
@@ -534,8 +498,8 @@
 					$(".jqcmd_window").hide().after("<div id='viScreen' tabindex=8></div>");
 					$("#viScreen").jqvi({
 						"fileText" : fileText,
-						"filesystem" : getCurrentDirectory(),
-						"filename" : params.target,
+						"filesystem" : current,
+						"filename" : filename,
 						unloadCallback : function() {
 							$("#viScreen").remove();
 							$(".jqcmd_window").show();
@@ -612,7 +576,44 @@
 			}	
 		}
 
+		var parseFolderText = function(pathParts, overWriteDirectory)
+		{
+			var tempDirectories = cmd.directory.slice(0);
+			var tempCurrent = settings.fileSystem;
 
+			for(i in pathParts)
+			{
+				if(pathParts[i] == "..")
+				{
+					tempDirectories.pop();
+				}
+				else
+				{
+					tempDirectories.push(pathParts[i]);
+				}
+			}
+
+			for(i in tempDirectories)
+			{
+				if(tempCurrent._folders[tempDirectories[i]] != undefined)
+				{
+					tempCurrent = tempCurrent._folders[tempDirectories[i]];
+				}
+				else
+				{
+					throw "not found";
+					return;
+				}
+			}
+			console.log("below");
+			if(overWriteDirectory)
+			{
+				cmd.directory = tempDirectories;	
+			}
+
+			return tempCurrent;
+
+		}
 		/**
 		 * Gets the current directory in the file tree and returns that part of the object
 		 * @return {object} 
@@ -622,7 +623,7 @@
 			var current = settings.fileSystem;
 			for(i in cmd.directory)
 			{
-				current = current[cmd.directory[i]];
+				current = current._folders[cmd.directory[i]];
 			}
 			return current;
 		}
